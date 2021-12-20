@@ -1,7 +1,10 @@
-pragma solidity ^0.5.0;
+// Sources flattened with hardhat v2.6.3 https://hardhat.org
 
+// File contracts/pancake/interfaces/IPancakePair.sol
 
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.5.0;
+
 interface IPancakePair {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -53,6 +56,12 @@ interface IPancakePair {
     function initialize(address, address) external;
 }
 
+
+// File contracts/pancake/libraries/SafeMath.sol
+
+
+
+pragma solidity >=0.4.0;
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -240,7 +249,13 @@ library SafeMath {
     }
 }
 
+
+// File contracts/pancake/libraries/FixedPoint.sol
+
 // SPDX-License-Identifier: GPL-3.0-or-later
+
+pragma solidity >=0.4.0;
+
 // a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))
 library FixedPoint {
     // range: [0, 2**112 - 1]
@@ -313,6 +328,11 @@ library FixedPoint {
 }
 
 
+// File contracts/pancake/libraries/PancakeLibrary.sol
+
+
+pragma solidity ^0.5.0;
+
 library PancakeLibrary {
     using SafeMath for uint;
 
@@ -330,8 +350,8 @@ library PancakeLibrary {
                 hex'ff',
                 factory,
                 keccak256(abi.encodePacked(token0, token1)),
-                 hex'999d725d835587f1863c4dc228319669e1ca9f9cefa7b94e170cce47b9e48b42' // localhost
-//                hex'ecba335299a6693cb2ebc4782e74669b84290b6378ea3a3873c7231a8d7d1074'  // bsc_test
+//                 hex'999d725d835587f1863c4dc228319669e1ca9f9cefa7b94e170cce47b9e48b42' // localhost
+                hex'ecba335299a6693cb2ebc4782e74669b84290b6378ea3a3873c7231a8d7d1074'  // bsc_test
             ))));
     }
 
@@ -393,6 +413,12 @@ library PancakeLibrary {
 }
 
 
+// File contracts/pancake/libraries/PancakeOracleLibrary.sol
+
+
+pragma solidity ^0.5.0;
+
+
 // library with helper methods for oracles that are concerned with computing average prices
 library PancakeOracleLibrary {
     using FixedPoint for *;
@@ -423,6 +449,14 @@ library PancakeOracleLibrary {
         }
     }
 }
+
+
+// File contracts/oracle/CrsBusdOracle.sol
+
+
+pragma solidity ^0.5.0;
+
+
 
 
 // fixed window oracle that recomputes the average price for the entire period once every period

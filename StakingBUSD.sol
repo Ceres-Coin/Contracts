@@ -1,7 +1,12 @@
-pragma solidity ^0.8.4;
+// Sources flattened with hardhat v2.6.3 https://hardhat.org
 
+// File @openzeppelin/contracts/security/ReentrancyGuard.sol@v4.4.0
 
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts v4.4.0 (security/ReentrancyGuard.sol)
+
+pragma solidity ^0.8.0;
+
 /**
  * @dev Contract module that helps prevent reentrant calls to a function.
  *
@@ -43,7 +48,7 @@ abstract contract ReentrancyGuard {
      * @dev Prevents a contract from calling itself, directly or indirectly.
      * Calling a `nonReentrant` function from another `nonReentrant`
      * function is not supported. It is possible to prevent this from happening
-     * by making the `nonReentrant` function external, and make it call a
+     * by making the `nonReentrant` function external, and making it call a
      * `private` function that does the actual work.
      */
     modifier nonReentrant() {
@@ -61,6 +66,13 @@ abstract contract ReentrancyGuard {
     }
 }
 
+
+// File @openzeppelin/contracts/utils/math/Math.sol@v4.4.0
+
+
+// OpenZeppelin Contracts v4.4.0 (utils/math/Math.sol)
+
+pragma solidity ^0.8.0;
 
 /**
  * @dev Standard math utilities missing in the Solidity language.
@@ -102,6 +114,11 @@ library Math {
 }
 
 
+// File contracts/interface/IStaking.sol
+
+
+pragma solidity ^0.8.4;
+
 interface IStaking {
 
     struct UserLock {
@@ -134,6 +151,12 @@ interface IStaking {
 }
 
 
+// File contracts/common/Context.sol
+
+
+
+pragma solidity ^0.8.0;
+
 /**
  * @dev Provides information about the current execution context, including the
  * sender of the transaction and its data. While these are generally available
@@ -154,6 +177,12 @@ abstract contract Context {
     }
 }
 
+
+// File contracts/common/Pausable.sol
+
+
+
+pragma solidity ^0.8.0;
 
 /**
  * @dev Contract module which allows children to implement an emergency stop
@@ -241,9 +270,16 @@ abstract contract Pausable is Context {
 }
 
 
+// File contracts/library/SafeMath.sol
+
+
+
+pragma solidity ^0.8.0;
+
 // CAUTION
 // This version of SafeMath should only be used with Solidity 0.8 or later,
 // because it relies on the compiler's built in overflow checks.
+
 /**
  * @dev Wrappers over Solidity's arithmetic operations.
  *
@@ -396,8 +432,21 @@ library SafeMath {
         return a % b;
     }
     }
+
+    /**
+    * @dev Returns the smallest of two numbers.
+     */
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
+    }
 }
 
+
+// File contracts/interface/IERC20.sol
+
+
+
+pragma solidity ^0.8.4;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
@@ -491,6 +540,12 @@ interface IERC20 {
 
 }
 
+
+// File contracts/library/Address.sol
+
+
+
+pragma solidity ^0.8.0;
 
 /**
  * @dev Collection of functions related to the address type
@@ -706,6 +761,13 @@ library Address {
 }
 
 
+// File contracts/library/SafeERC20.sol
+
+
+
+pragma solidity ^0.8.0;
+
+
 /**
  * @title SafeERC20
  * @dev Wrappers around ERC20 operations that throw on failure (when the token
@@ -799,7 +861,16 @@ library SafeERC20 {
 }
 
 
+// File contracts/common/ERC20MintBurn.sol
+
+
+pragma solidity 0.8.4;
+
+
+
 // Due to compiling issues, _name, _symbol, and _decimals were removed
+
+
 /**
  * @dev Implementation of the {IERC20} interface.
  *
@@ -951,8 +1022,6 @@ abstract contract ERC20MintBurn is Context, IERC20 {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
-        _beforeTokenTransfer(sender, recipient, amount);
-
         _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
@@ -969,8 +1038,6 @@ abstract contract ERC20MintBurn is Context, IERC20 {
      */
     function _mint(address account, uint256 amount) internal virtual {
         require(account != address(0), "ERC20: mint to the zero address");
-
-        _beforeTokenTransfer(address(0), account, amount);
 
         _totalSupply = _totalSupply.add(amount);
         _balances[account] = _balances[account].add(amount);
@@ -1019,8 +1086,6 @@ abstract contract ERC20MintBurn is Context, IERC20 {
     function _burn(address account, uint256 amount) internal virtual {
         require(account != address(0), "ERC20: burn from the zero address");
 
-        _beforeTokenTransfer(account, address(0), amount);
-
         _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
         _totalSupply = _totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
@@ -1058,23 +1123,25 @@ abstract contract ERC20MintBurn is Context, IERC20 {
         _approve(account, _msgSender(), _allowances[account][_msgSender()].sub(amount, "ERC20: burn amount exceeds allowance"));
     }
 
-    /**
-     * @dev Hook that is called before any transfer of tokens. This includes
-     * minting and burning.
-     *
-     * Calling conditions:
-     *
-     * - when `from` and `to` are both non-zero, `amount` of `from`'s tokens
-     * will be to transferred to `to`.
-     * - when `from` is zero, `amount` tokens will be minted for `to`.
-     * - when `to` is zero, `amount` of `from`'s tokens will be burned.
-     * - `from` and `to` are never both zero.
-     *
-     * To learn more about hooks, head to xref:ROOT:using-hooks.adoc[Using Hooks].
-     */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual { }
 }
 
+
+// File contracts/interface/IPoolManager.sol
+
+
+pragma solidity ^0.8.4;
+
+interface IPoolManager {
+
+    function pools(address sender) external returns (bool);
+}
+
+
+// File contracts/common/Ownable.sol
+
+
+
+pragma solidity ^0.8.0;
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -1096,8 +1163,8 @@ abstract contract Ownable is Context {
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
-    constructor() {
-        _setOwner(_msgSender());
+    constructor(address _owner_) {
+        _setOwner(_owner_);
     }
 
     /**
@@ -1142,6 +1209,177 @@ abstract contract Ownable is Context {
     }
 }
 
+
+// File contracts/asset/CRS.sol
+
+
+pragma solidity ^0.8.4;
+
+
+
+contract CRS is ERC20MintBurn, Ownable {
+
+
+    //****************
+    // META DATA
+    //****************
+    string public override name = "Ceres";
+    string public override symbol = "CRS";
+    uint8 public constant override decimals = 18;
+    
+    IPoolManager public ipm;
+
+    //****************
+    // MODIFIES
+    //****************
+    modifier onlyPools() {
+        require(ipm.pools(msg.sender) == true, "Only pools!");
+        _;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Constructor
+    // ------------------------------------------------------------------------
+    constructor(uint256 _premint, address _owner) Ownable(_owner) {
+        _mint(owner(), _premint);
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Called by pools, mint new CRS
+    // ------------------------------------------------------------------------
+    function poolMint(address to, uint256 amount) public onlyPools {
+        super._mint(to, amount);
+        emit CRSMinted(msg.sender, to, amount);
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Called by pools, burn CRS
+    // ------------------------------------------------------------------------
+    function poolBurnFrom(address from, uint256 amount) public onlyPools {
+        super._burnFrom(from, amount);
+        emit CRSBurned(from, msg.sender, amount);
+    }
+    
+
+    // ------------------------------------------------------------------------
+    // Set ipm
+    // ------------------------------------------------------------------------
+    function setPoolManager(address _poolManager) public onlyOwner {
+        ipm = IPoolManager(_poolManager);
+    }
+
+
+    //****************
+    // EVENTS
+    //****************
+    event CRSMinted(address indexed from, address indexed to, uint256 amount);
+    event CRSBurned(address indexed from, address indexed to, uint256 amount);
+
+}
+
+
+// File contracts/asset/ASC.sol
+
+
+pragma solidity ^0.8.4;
+
+
+
+contract ASC is ERC20MintBurn, Ownable {
+
+    //****************
+    // META DATA
+    //****************
+    string public override name = "AS Coin";
+    string public override symbol = "ASC";
+    uint8 public constant override decimals = 18;
+
+    IPoolManager public ipm;
+
+    //****************
+    // MODIFIES
+    //****************
+    modifier onlyPools() {
+        require(ipm.pools(msg.sender) == true, "Only pools!");
+        _;
+    }
+
+    // ------------------------------------------------------------------------
+    // Constructor
+    // ------------------------------------------------------------------------
+    constructor(uint256 _premint, address _owner) Ownable(_owner) {
+        _mint(owner(), _premint);
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Called by pools, mint new ASC
+    // ------------------------------------------------------------------------
+    function poolMint(address to, uint256 amount) public onlyPools {
+        super._mint(to, amount);
+        emit ASCMinted(msg.sender, to, amount);
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Called by pools, burn ASC
+    // ------------------------------------------------------------------------
+    function poolBurnFrom(address from, uint256 amount) public onlyPools {
+        super._burnFrom(from, amount);
+        emit ASCBurned(from, msg.sender, amount);
+    }
+    
+
+    // ------------------------------------------------------------------------
+    // Set ipm
+    // ------------------------------------------------------------------------
+    function setPoolManager(address _poolManager) public onlyOwner {
+        ipm = IPoolManager(_poolManager);
+    }
+
+
+    //****************
+    // EVENTS
+    //****************
+    event ASCMinted(address indexed from, address indexed to, uint256 amount);
+    event ASCBurned(address indexed from, address indexed to, uint256 amount);
+}
+
+
+// File contracts/interface/IOracle.sol
+
+
+pragma solidity ^0.8.0;
+
+interface IOracle {
+
+    function consult(address token, uint amountIn) external view returns (uint amountOut);
+
+    function update() external;
+}
+
+
+// File contracts/interface/IChainlink.sol
+
+
+pragma solidity ^0.8.0;
+
+interface IChainlink {
+
+    function getLatestPrice() external view returns (int);
+
+    function getDecimals() external view returns (uint8);
+}
+
+
+// File contracts/common/Governable.sol
+
+
+
+pragma solidity ^0.8.0;
 
 /**
  * @dev Contract module which provides a basic governing control mechanism, where
@@ -1240,195 +1478,12 @@ abstract contract Governable is Context {
 }
 
 
-contract ASC is ERC20MintBurn, Ownable, Governable {
-
-    using SafeMath for uint256;
-
-    //****************
-    // META DATA
-    //****************
-    string public override name = "AS Coin";
-    string public override symbol = "ASC";
-    uint8 public constant override decimals = 18;
-
-    address[] public poolsArray;
-    mapping(address => bool) public pools;
-
-    //****************
-    // MODIFIES
-    //****************
-    modifier onlyPools() {
-        require(pools[msg.sender] == true, "Only pools!");
-        _;
-    }
-    modifier onlyGovernance() {
-        require(msg.sender == owner() || msg.sender == timelock() || msg.sender == controller(), "Only Governance!");
-        _;
-    }
-
-    // ------------------------------------------------------------------------
-    // Constructor
-    // ------------------------------------------------------------------------
-    constructor(uint256 premint) {
-        _mint(owner(), premint);
-    }
+// File contracts/autopool/CeresAnchor.sol
 
 
-    // ------------------------------------------------------------------------
-    // Add a pool
-    // ------------------------------------------------------------------------
-    function addPool(address poolAddress) public onlyGovernance {
-        require(pools[poolAddress] == false, "pool already exists");
-        pools[poolAddress] = true;
-        poolsArray.push(poolAddress);
-    }
+pragma solidity ^0.8.4;
 
 
-    // ------------------------------------------------------------------------
-    // Remove a pool
-    // ------------------------------------------------------------------------
-    function removePool(address poolAddress) public onlyGovernance {
-        require(pools[poolAddress] == true, "pool doesn't exist");
-
-        delete pools[poolAddress];
-        for (uint i = 0; i < poolsArray.length; i++) {
-            if (poolsArray[i] == poolAddress) {
-                // will leave a zero address at this index
-                poolsArray[i] = address(0);
-                break;
-            }
-        }
-    }
-
-
-    // ------------------------------------------------------------------------
-    // Called by pools, mint new ASC
-    // ------------------------------------------------------------------------
-    function poolMint(address to, uint256 amount) public onlyPools {
-        super._mint(to, amount);
-        emit ASCMinted(msg.sender, to, amount);
-    }
-
-
-    // ------------------------------------------------------------------------
-    // Called by pools, burn ASC
-    // ------------------------------------------------------------------------
-    function poolBurnFrom(address from, uint256 amount) public onlyPools {
-        super._burnFrom(from, amount);
-        emit ASCBurned(from, msg.sender, amount);
-    }
-
-
-    // ------------------------------------------------------------------------
-    // Setters
-    // ------------------------------------------------------------------------
-    function setController(address newController) public onlyOwner {
-        _setController(newController);
-    }
-
-
-    function setTimelock(address newTimelock) public onlyOwner {
-        _setTimelock(newTimelock);
-    }
-
-    //****************
-    // EVENTS
-    //****************
-    event ASCMinted(address indexed from, address indexed to, uint256 amount);
-    event ASCBurned(address indexed from, address indexed to, uint256 amount);
-}
-
-
-contract CRS is ERC20MintBurn, Ownable, Governable {
-
-
-    //****************
-    // META DATA
-    //****************
-    string public override name = "Ceres";
-    string public override symbol = "CRS";
-    uint8 public constant override decimals = 18;
-    
-    ASC public coinASC;
-    
-    //****************
-    // MODIFIES
-    //****************
-    modifier onlyPools() {
-        // same pools with asc
-        require(coinASC.pools(msg.sender) == true, "Only pools!");
-        _;
-    }
-    
-    modifier onlyGovernance() {
-        require(msg.sender == owner() || msg.sender == timelock() || msg.sender == controller(), "Only Governance!");
-        _;
-    }
-
-
-    // ------------------------------------------------------------------------
-    // Constructor
-    // ------------------------------------------------------------------------
-    constructor(uint256 premint, address asc) {
-        _mint(owner(), premint);
-        coinASC = ASC(asc);
-    }
-
-    
-    // ------------------------------------------------------------------------
-    // Called by pools, mint new CRS
-    // ------------------------------------------------------------------------
-    function poolMint(address to, uint256 amount) public onlyPools {
-        super._mint(to, amount);
-        emit CRSMinted(msg.sender, to, amount);
-    }
-
-
-    // ------------------------------------------------------------------------
-    // Called by pools, burn CRS
-    // ------------------------------------------------------------------------
-    function poolBurnFrom(address from, uint256 amount) public onlyPools {
-        super._burnFrom(from, amount);
-        emit CRSBurned(from, msg.sender, amount);
-    }
-
-
-    // ------------------------------------------------------------------------
-    // Setters
-    // ------------------------------------------------------------------------
-    function setController(address newController) public onlyOwner {
-        _setController(newController);
-    }
-
-
-    function setTimelock(address newTimelock) public onlyOwner {
-        _setTimelock(newTimelock);
-    }
-    
-
-    //****************
-    // EVENTS
-    //****************
-    event CRSMinted(address indexed from, address indexed to, uint256 amount);
-    event CRSBurned(address indexed from, address indexed to, uint256 amount);
-
-}
-
-
-interface IOracle {
-
-    function consult(address token, uint amountIn) external view returns (uint amountOut);
-
-    function update() external;
-}
-
-
-interface IChainlink {
-
-    function getLatestPrice() external view returns (int);
-
-    function getDecimals() external view returns (uint8);
-}
 
 
 contract CeresAnchor is Ownable, Governable {
@@ -1457,6 +1512,15 @@ contract CeresAnchor is Ownable, Governable {
 
     uint256 public constant CERES_PRECISION = 1e6;  // 1000000 <=> 1 integer
     uint256 public constant PRICE_TARGET = 1e6;  // 1:1 to USD
+    uint256 public seignioragePercent = 5000;
+
+    //****************
+    // COEFFICIENT
+    //****************
+    uint256 public CiRate;
+    uint256 public Cp;
+    uint256 public Vp;
+
 
     //****************
     // MODIFIES
@@ -1469,11 +1533,16 @@ contract CeresAnchor is Ownable, Governable {
     // ------------------------------------------------------------------------
     // Constructor
     // ------------------------------------------------------------------------
-    constructor() {
+    constructor(address _owner) Ownable(_owner){
+        
         collateralRatio = 850000;
         ratioStep = 2500;
         priceBand = 5000;
         updateCooldown = 3600;
+
+        CiRate = 50000;
+        Cp = 1000000;
+        Vp = 500000;
     }
 
 
@@ -1505,7 +1574,6 @@ contract CeresAnchor is Ownable, Governable {
     // ------------------------------------------------------------------------
     // Setting of system of params
     // ------------------------------------------------------------------------
-
     function setRatioStep(uint256 newStep) public onlyGovernance {
         ratioStep = newStep;
     }
@@ -1522,12 +1590,28 @@ contract CeresAnchor is Ownable, Governable {
         collateralRatio = newRatio;
     }
 
-    function setLastUpdateTime(uint256 newTime) public onlyGovernance {
-        lastUpdateTime = newTime;
+    function setSeignioragePercent(uint256 newPercent) public onlyGovernance {
+        seignioragePercent = newPercent;
     }
 
-    function setBusdAddress(address newAddress) public onlyGovernance {
-        busdAddress = newAddress;
+    function setCiRate(uint256 newCiRate) public onlyGovernance {
+        collateralRatio = newCiRate;
+    }
+
+    function setCp(uint256 newCp) public onlyGovernance {
+        collateralRatio = newCp;
+    }
+
+    function setVp(uint256 newVp) public onlyGovernance {
+        collateralRatio = newVp;
+    }
+
+    function setController(address newController) public onlyOwner {
+        _setController(newController);
+    }
+
+    function setTimelock(address newTimelock) public onlyOwner {
+        _setTimelock(newTimelock);
     }
 
     // ------------------------------------------------------------------------
@@ -1546,15 +1630,10 @@ contract CeresAnchor is Ownable, Governable {
         busdPriceDecimals = busdChainlink.getDecimals();
     }
 
-    function setController(address newController) public onlyOwner {
-        _setController(newController);
+    function setBusdAddress(address newAddress) public onlyGovernance {
+        busdAddress = newAddress;
     }
-
-    function setTimelock(address newTimelock) public onlyOwner {
-        _setTimelock(newTimelock);
-    }
-
-
+    
     // ------------------------------------------------------------------------
     // Get ASC price in USD
     // ------------------------------------------------------------------------
@@ -1600,6 +1679,47 @@ contract CeresAnchor is Ownable, Governable {
 }
 
 
+// File contracts/interface/IStaker.sol
+
+
+pragma solidity ^0.8.4;
+
+interface IStaker {
+    
+    function stake(address staker) external;
+
+    function refer(address staker, address referer) external;
+    
+}
+
+
+// File contracts/interface/IStakingManager.sol
+
+
+pragma solidity ^0.8.4;
+
+interface IStakingManager {
+
+    function stakings(address sender) external view returns (bool);
+
+    function stakingAddress(address staingToken) external view returns (address);
+}
+
+
+// File contracts/staking/Staking.sol
+
+
+pragma solidity ^0.8.4;
+
+
+
+
+
+
+
+
+
+
 abstract contract Staking is IStaking, ReentrancyGuard, Pausable, Ownable, Governable {
 
     using SafeMath for uint256;
@@ -1613,6 +1733,12 @@ abstract contract Staking is IStaking, ReentrancyGuard, Pausable, Ownable, Gover
     ASC public coinASC;
     address public ascAddress;
 
+    IPoolManager public ipm;
+    
+    IStakingManager public ism;
+    
+    IStaker public iStaker;
+
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
     uint256 public rewardsDuration = 365 days;
@@ -1623,15 +1749,10 @@ abstract contract Staking is IStaking, ReentrancyGuard, Pausable, Ownable, Gover
     uint256 public lockTime = 3 days;
     mapping(address => UserLock) public userLocks;
 
-    mapping(address => address) public referrals;
-    uint256 public referralPercent = 10000;
-    address public referralGovern;
-
     mapping(address => uint256) public userRewardPerSharePaid;
     mapping(address => uint256) public rewards;
 
     uint256 internal _totalStaking;
-
     uint256 internal _totalShare;
     mapping(address => uint256) internal _shareBalances;
 
@@ -1639,9 +1760,6 @@ abstract contract Staking is IStaking, ReentrancyGuard, Pausable, Ownable, Gover
 
     uint256 public constant CERES_PRECISION = 1e6;
     uint256 public constant SHARE_PRECISION = 1e10;
-
-    mapping(address => bool) public stakings;
-    mapping(address => address) public stakingAddresses;
 
     //****************
     // MODIFIES
@@ -1652,12 +1770,12 @@ abstract contract Staking is IStaking, ReentrancyGuard, Pausable, Ownable, Gover
     }
     
     modifier onlyPools() {
-        require(coinASC.pools(msg.sender) == true, "Only pools!");
+        require(ipm.pools(msg.sender) == true, "Only pools!");
         _;
     }
 
     modifier onlyStakings() {
-        require(stakings[msg.sender] == true, "Only staking!");
+        require(ism.stakings(msg.sender) == true, "Only staking!");
         _;
     }
 
@@ -1674,32 +1792,12 @@ abstract contract Staking is IStaking, ReentrancyGuard, Pausable, Ownable, Gover
     // ------------------------------------------------------------------------
     // Setters
     // ------------------------------------------------------------------------
-    function setCeresAnchor(address anchorAddress) public onlyOwner {
+    function setCeresAnchor(address anchorAddress) public onlyGovernance {
         ceresAnchor = CeresAnchor(anchorAddress);
     }
-
-    function addStaking(address staking) public onlyOwner {
-        stakings[staking] = true;
-    }
-
-    function removeStaking(address staking) public onlyOwner {
-        stakings[staking] = false;
-    }
-
-    function setStakingAddress(address stakeToken, address stakingAddress) public onlyOwner {
-        stakingAddresses[stakeToken] = stakingAddress;
-    }
-
-    function setLockTime(uint256 _lockTime) public onlyOwner {
+    
+    function setLockTime(uint256 _lockTime) public onlyGovernance {
         lockTime = _lockTime;
-    }
-
-    function setreferralPercent(uint256 _referralPercent) public onlyOwner {
-        referralPercent = _referralPercent;
-    }
-
-    function setReferralGovern(address _referralGovern) public onlyOwner {
-        referralGovern = _referralGovern;
     }
 
     function setController(address newController) public onlyOwner {
@@ -1708,6 +1806,18 @@ abstract contract Staking is IStaking, ReentrancyGuard, Pausable, Ownable, Gover
 
     function setTimelock(address newTimelock) public onlyOwner {
         _setTimelock(newTimelock);
+    }
+
+    function setPoolManager(address _poolManager) public onlyGovernance {
+        ipm = IPoolManager(_poolManager);
+    }
+
+    function setStakingManager(address _stakingManager) public onlyGovernance {
+        ism = IStakingManager(_stakingManager);
+    }
+    
+    function setIStaker(address _iStaker) public onlyGovernance {
+        iStaker = IStaker(_iStaker);
     }
 
     
@@ -1763,28 +1873,6 @@ abstract contract Staking is IStaking, ReentrancyGuard, Pausable, Ownable, Gover
             return _shareBalances[account];
     }
 
-
-    // ------------------------------------------------------------------------
-    // Transfer fund - internal
-    // ------------------------------------------------------------------------
-    function _transferWithReferral(IERC20 token, uint256 amount, address referral) internal returns (uint256 stakeAmount) {
-
-        if (referralPercent == 0 || (referral == address(0) && referralGovern == address(0))) {
-            // no referral
-            SafeERC20.safeTransferFrom(token, msg.sender, address(this), amount);
-            stakeAmount = amount;
-        } else {
-            // referral with percent
-            if (referral == address(0))
-                referral = referralGovern;
-            
-            uint256 referralAmount = amount * referralPercent / CERES_PRECISION;
-            stakeAmount = amount - referralAmount;
-            SafeERC20.safeTransferFrom(token, msg.sender, address(this), stakeAmount);
-            SafeERC20.safeTransferFrom(token, msg.sender, referral, referralAmount);
-        }
-    }
-
     // ------------------------------------------------------------------------
     // Stake - interal
     // ------------------------------------------------------------------------
@@ -1801,10 +1889,24 @@ abstract contract Staking is IStaking, ReentrancyGuard, Pausable, Ownable, Gover
         _totalShare += userShare;
         _shareBalances[account] += userShare;
 
+        iStaker.stake(account);
         emit Staked(account, amount);
     }
 
 
+    function stake(uint256 amount) public override virtual;
+    
+    
+    // ------------------------------------------------------------------------
+    // User stake with referral
+    // ------------------------------------------------------------------------
+    function stakeWithReferral(uint256 amount, address referer) external {
+        require(msg.sender != referer, "Referer can't be yourself!");
+        iStaker.refer(msg.sender, referer);
+        stake(amount);
+    }
+
+    
     // ------------------------------------------------------------------------
     // Update user lock - interal
     // ------------------------------------------------------------------------
@@ -1828,7 +1930,7 @@ abstract contract Staking is IStaking, ReentrancyGuard, Pausable, Ownable, Gover
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            address stakingCRS = stakingAddresses[crsAddress];
+            address stakingCRS = ism.stakingAddress(crsAddress);
             if (stakingCRS != address(this))
                 SafeERC20.safeTransfer(coinCRS, stakingCRS, reward);
             IStaking(stakingCRS).notifyReinvest(msg.sender, reward);
@@ -1838,7 +1940,7 @@ abstract contract Staking is IStaking, ReentrancyGuard, Pausable, Ownable, Gover
     // ------------------------------------------------------------------------
     // Get staking reward by percent 1-100
     // ------------------------------------------------------------------------
-    function getRewardWithPercent(uint256 percent) public virtual nonReentrant updateReward(msg.sender) {
+    function claimRewardWithPercent(uint256 percent) public virtual nonReentrant updateReward(msg.sender) {
         require(percent > 0 && percent <= 100, "percent wrong");
         uint256 reward = rewards[msg.sender] * percent / 100;
         if (reward > 0) {
@@ -1900,26 +2002,55 @@ abstract contract Staking is IStaking, ReentrancyGuard, Pausable, Ownable, Gover
 }
 
 
-interface IMinter {
+// File contracts/interface/IPool.sol
 
-    function notifyMint(uint256 ascAmount, uint256 collateralAmount) external;
-    
-    function getMintWithPercent(uint256 percent) external;
-    
-    function reinvestMint() external;
-    
+
+pragma solidity ^0.8.4;
+
+interface IPool {
+
+    function collateralBalance() external view returns (uint256);
 }
 
+
+// File contracts/interface/IMinter.sol
+
+
+pragma solidity ^0.8.4;
+
+interface IMinter is IPool{
+
+    function notifyMint(uint256 ascAmount, uint256 collateralAmount) external;
+
+    function claimMintWithPercent(uint256 percent) external;
+
+    function reinvestMint() external;
+
+}
+
+
+// File contracts/interface/IRedeemer.sol
+
+
+pragma solidity ^0.8.4;
 
 interface IRedeemer {
 
     function notifyRedeem(uint256 ascAmount, uint256 collateral0Amount, uint256 collateral1Amount) external;
 
-    function getRedeemWithPercent(uint256 percent) external;
+    function claimRedeemWithPercent(uint256 percent) external;
 
     function reinvestRedeem() external;
     
 }
+
+
+// File contracts/staking/StakingBUSD.sol
+
+
+pragma solidity ^0.8.4;
+
+
 
 
 contract StakingBUSD is Staking, IMinter {
@@ -1945,7 +2076,7 @@ contract StakingBUSD is Staking, IMinter {
     // ------------------------------------------------------------------------
     // Constructor
     // ------------------------------------------------------------------------
-    constructor(address busd, address asc, address crs){
+    constructor(address busd, address asc, address crs, address _owner) Ownable(_owner){
 
         BUSD = IERC20(busd);
         busdAddress = busd;
@@ -1959,7 +2090,7 @@ contract StakingBUSD is Staking, IMinter {
     // User mint amount
     // ------------------------------------------------------------------------
     function mintEarned(address account) public view returns (uint256) {
-        return _shareBalances[account] * (mintPerShareStored - userMintPerSharePaid[account]) / SHARE_PRECISION + mints[account];
+        return _shareBalances[account] * (mintPerShareStored - userMintPerSharePaid[account]) / 1e18 + mints[account];
     }
 
 
@@ -1982,7 +2113,7 @@ contract StakingBUSD is Staking, IMinter {
 
         if (ascAmount > 0) {
             lastMintAmount = ascAmount;
-            mintPerShareStored += ascAmount * SHARE_PRECISION / _totalShare;
+            mintPerShareStored += ascAmount * 1e18 / _totalShare;
         }
     }
 
@@ -1990,22 +2121,11 @@ contract StakingBUSD is Staking, IMinter {
     // ------------------------------------------------------------------------
     // User stake
     // ------------------------------------------------------------------------
-    function stake(uint256 amount) external override nonReentrant whenNotPaused updateReward(msg.sender) updateMint(msg.sender) {
+    function stake(uint256 amount) public override nonReentrant whenNotPaused updateReward(msg.sender) updateMint(msg.sender) {
         require(amount > 0, "cannot stake 0");
 
         SafeERC20.safeTransferFrom(BUSD, msg.sender, address(this), amount);
         _stake(msg.sender, amount);
-    }
-
-
-    // ------------------------------------------------------------------------
-    // User stake with referral
-    // ------------------------------------------------------------------------
-    function stakeWithReferral(uint256 amount, address referral) external nonReentrant whenNotPaused updateReward(msg.sender) updateMint(msg.sender) {
-        require(amount > 0, "cannot stake 0");
-
-        uint256 stakeAmount = _transferWithReferral(BUSD, amount, referral);
-        _stake(msg.sender, stakeAmount);
     }
 
 
@@ -2025,7 +2145,7 @@ contract StakingBUSD is Staking, IMinter {
         uint256 mint = mints[msg.sender];
         if (mint > 0) {
             mints[msg.sender] = 0;
-            address stakingASC = stakingAddresses[ascAddress];
+            address stakingASC = ism.stakingAddress(ascAddress);
             SafeERC20.safeTransfer(coinASC, stakingASC, mint);
             IStaking(stakingASC).notifyReinvest(msg.sender, mint);
         }
@@ -2050,8 +2170,8 @@ contract StakingBUSD is Staking, IMinter {
 
         uint256 percent = shareAmount * 100 / availableShareOf(msg.sender);
         withdraw(shareAmount);
-        getRewardWithPercent(percent);
-        getMintWithPercent(percent);
+        claimRewardWithPercent(percent);
+        claimMintWithPercent(percent);
     }
 
 
@@ -2070,9 +2190,9 @@ contract StakingBUSD is Staking, IMinter {
 
 
     // ------------------------------------------------------------------------
-    // Get mint reward by percent 1-100
+    // Claim mint reward by percent 1-100
     // ------------------------------------------------------------------------
-    function getMintWithPercent(uint256 percent) public override nonReentrant updateMint(msg.sender) {
+    function claimMintWithPercent(uint256 percent) public override nonReentrant updateMint(msg.sender) {
         require(percent > 0 && percent <= 100, "percent wrong");
         uint256 mint = mints[msg.sender] * percent / 100;
         if (mint > 0) {
@@ -2090,7 +2210,7 @@ contract StakingBUSD is Staking, IMinter {
         if (_totalStaking > 0)
             return rewardRate * 31536000 * ceresAnchor.getCRSPrice() * CERES_PRECISION / _totalStaking / ceresAnchor.getBUSDPrice();
         else
-            return 0;
+            return 999999999999;
     }
 
 
@@ -2102,5 +2222,13 @@ contract StakingBUSD is Staking, IMinter {
             _unpause();
         else
             _pause();
+    }
+    
+
+    // ------------------------------------------------------------------------
+    // Get collateral balalce of this pool in USD - ceres decimals
+    // ------------------------------------------------------------------------
+    function collateralBalance() public override view returns (uint256){
+        return _totalStaking * ceresAnchor.getBUSDPrice() / uint256(10) ** BUSD.decimals();
     }
 }

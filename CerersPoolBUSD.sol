@@ -647,6 +647,74 @@ abstract contract Ownable is Context {
 }
 
 
+// File contracts/asset/ASC.sol
+
+
+pragma solidity ^0.8.4;
+
+
+
+contract ASC is ERC20MintBurn, Ownable {
+
+    //****************
+    // META DATA
+    //****************
+    string public override name = "AS Coin";
+    string public override symbol = "ASC";
+    uint8 public constant override decimals = 18;
+
+    IPoolManager public ipm;
+
+    //****************
+    // MODIFIES
+    //****************
+    modifier onlyPools() {
+        require(ipm.pools(msg.sender) == true, "Only pools!");
+        _;
+    }
+
+    // ------------------------------------------------------------------------
+    // Constructor
+    // ------------------------------------------------------------------------
+    constructor(uint256 _premint, address _owner) Ownable(_owner) {
+        _mint(owner(), _premint);
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Called by pools, mint new ASC
+    // ------------------------------------------------------------------------
+    function poolMint(address to, uint256 amount) public onlyPools {
+        super._mint(to, amount);
+        emit ASCMinted(msg.sender, to, amount);
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Called by pools, burn ASC
+    // ------------------------------------------------------------------------
+    function poolBurnFrom(address from, uint256 amount) public onlyPools {
+        super._burnFrom(from, amount);
+        emit ASCBurned(from, msg.sender, amount);
+    }
+    
+
+    // ------------------------------------------------------------------------
+    // Set ipm
+    // ------------------------------------------------------------------------
+    function setPoolManager(address _poolManager) public onlyOwner {
+        ipm = IPoolManager(_poolManager);
+    }
+
+
+    //****************
+    // EVENTS
+    //****************
+    event ASCMinted(address indexed from, address indexed to, uint256 amount);
+    event ASCBurned(address indexed from, address indexed to, uint256 amount);
+}
+
+
 // File contracts/asset/CRS.sol
 
 
@@ -714,5 +782,661 @@ contract CRS is ERC20MintBurn, Ownable {
     //****************
     event CRSMinted(address indexed from, address indexed to, uint256 amount);
     event CRSBurned(address indexed from, address indexed to, uint256 amount);
+
+}
+
+
+// File contracts/interface/IOracle.sol
+
+
+pragma solidity ^0.8.0;
+
+interface IOracle {
+
+    function consult(address token, uint amountIn) external view returns (uint amountOut);
+
+    function update() external;
+}
+
+
+// File contracts/interface/IChainlink.sol
+
+
+pragma solidity ^0.8.0;
+
+interface IChainlink {
+
+    function getLatestPrice() external view returns (int);
+
+    function getDecimals() external view returns (uint8);
+}
+
+
+// File contracts/common/Governable.sol
+
+
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Contract module which provides a basic governing control mechanism, where
+ * there is an governing account that can be granted exclusive access to
+ * specific functions.
+ *
+ * By default, the governing account will be empty. This
+ * can later be changed by governor or owner.
+ *
+ */
+abstract contract Governable is Context {
+    
+    address internal _controller;
+    address internal _timelock;
+
+    event ControllerTransferred(address indexed previousController, address indexed newController);
+    event TimelockTransferred(address indexed previousTimelock, address indexed newTimelock);
+    
+    /**
+     * @dev Returns the address of the current controller.
+     */
+    function controller() public view virtual returns (address) {
+        return _controller;
+    }
+    
+    /**
+     * @dev Returns the address of the current timelock.
+     */
+    function timelock() public view virtual returns (address) {
+        return _timelock;
+    }
+
+    /**
+     * @dev Throws if called by any account other than the controller.
+     */
+    modifier onlyController() {
+        require(controller() == _msgSender(), "Controller: caller is not the controller");
+        _;
+    }
+    
+    /**
+     * @dev Throws if called by any account other than the timelock.
+     */
+    modifier onlyTimelock() {
+        require(timelock() == _msgSender(), "Timelock: caller is not the timelock");
+        _;
+    }
+
+    /**
+     * @dev Transfers controller of the contract to a new account
+     * Can only be called by the current controller.
+     */
+    function transferController(address newController) public virtual onlyController {
+        require(newController != address(0), "Controller: new controller is the zero address");
+        _setController(newController);
+    }
+
+    /**
+    * @dev Leaves the contract without controller. It will not be possible to call
+     * `onlyController` functions anymore. Can only be called by the current owner.
+     */
+    function renounceController() public virtual onlyController {
+        _setController(address(0));
+    }
+
+    function _setController(address newController) internal {
+        address old = _controller;
+        _controller = newController;
+        emit ControllerTransferred(old, newController);
+    }
+    
+    /**
+     * @dev Transfers timelock of the contract to a new account
+     * Can only be called by the current timelock.
+     */
+    function transferTimelock(address newTimelock) public virtual onlyTimelock {
+        require(newTimelock != address(0), "Timelock: new timelock is the zero address");
+        _setTimelock(newTimelock);
+    }
+    
+    /**
+    * @dev Leaves the contract without timelock. It will not be possible to call
+     * `onlyTimelock` functions anymore. Can only be called by the current owner.
+     */
+    function renounceTimelock() public virtual onlyTimelock {
+        _setTimelock(address(0));
+    }
+
+    function _setTimelock(address newTimelock) internal {
+        address old = _timelock;
+        _timelock = newTimelock;
+        emit TimelockTransferred(old, newTimelock);
+    }
+
+    
+}
+
+
+// File contracts/autopool/CeresAnchor.sol
+
+
+pragma solidity ^0.8.4;
+
+
+
+
+contract CeresAnchor is Ownable, Governable {
+    
+    enum Coin {ASC, CRS}
+
+    //****************
+    // PRICER
+    //****************
+    address public busdAddress;
+
+    IChainlink public busdChainlink;
+    uint8 public busdPriceDecimals;
+
+    IOracle public ascBusdOracle;
+    IOracle public crsBusdOracle;
+
+    //****************
+    // SYSTEM PARAMS
+    //****************
+    uint256 public collateralRatio; // collateral ratio of asc
+    uint256 public lastUpdateTime; // last time update ratio
+    uint256 public ratioStep; // step that collateral rate changes every time
+    uint256 public priceBand; // threshold of automint / autoredeem
+    uint256 public updateCooldown; // cooldown between raito changes 
+
+    uint256 public constant CERES_PRECISION = 1e6;  // 1000000 <=> 1 integer
+    uint256 public constant PRICE_TARGET = 1e6;  // 1:1 to USD
+    uint256 public seignioragePercent = 5000;
+
+    //****************
+    // COEFFICIENT
+    //****************
+    uint256 public CiRate;
+    uint256 public Cp;
+    uint256 public Vp;
+
+
+    //****************
+    // MODIFIES
+    //****************
+    modifier onlyGovernance() {
+        require(msg.sender == owner() || msg.sender == timelock() || msg.sender == controller(), "Only Governance!");
+        _;
+    }
+
+    // ------------------------------------------------------------------------
+    // Constructor
+    // ------------------------------------------------------------------------
+    constructor(address _owner) Ownable(_owner){
+        
+        collateralRatio = 850000;
+        ratioStep = 2500;
+        priceBand = 5000;
+        updateCooldown = 3600;
+
+        CiRate = 50000;
+        Cp = 1000000;
+        Vp = 500000;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Update collateral ratio according to ASC/USD price in current
+    // ------------------------------------------------------------------------
+    function updateCollateralRatio() public {
+        uint256 ascPrice = getASCPrice();
+        require(block.timestamp - lastUpdateTime >= updateCooldown, "Wait after cooldown!");
+
+        if (ascPrice > PRICE_TARGET + priceBand) {
+            // decrease collateral ratio, minimum to 0
+            if (collateralRatio <= ratioStep)
+                collateralRatio = 0;
+            else
+                collateralRatio -= ratioStep;
+        } else if (ascPrice < PRICE_TARGET - priceBand) {
+            // increase collateral ratio, maximum to 1000000, i.e 100% in CERES_PRECISION
+            if (collateralRatio + ratioStep >= 1000000)
+                collateralRatio = 1000000;
+            else
+                collateralRatio += ratioStep;
+        }
+
+        // update last time
+        lastUpdateTime = block.timestamp;
+    }
+
+    // ------------------------------------------------------------------------
+    // Setting of system of params
+    // ------------------------------------------------------------------------
+    function setRatioStep(uint256 newStep) public onlyGovernance {
+        ratioStep = newStep;
+    }
+
+    function setUpdateCooldown(uint256 newCooldown) public onlyGovernance {
+        updateCooldown = newCooldown;
+    }
+
+    function setPriceBand(uint256 newBand) public onlyGovernance {
+        priceBand = newBand;
+    }
+
+    function setCollateralRatio(uint256 newRatio) public onlyGovernance {
+        collateralRatio = newRatio;
+    }
+
+    function setSeignioragePercent(uint256 newPercent) public onlyGovernance {
+        seignioragePercent = newPercent;
+    }
+
+    function setCiRate(uint256 newCiRate) public onlyGovernance {
+        collateralRatio = newCiRate;
+    }
+
+    function setCp(uint256 newCp) public onlyGovernance {
+        collateralRatio = newCp;
+    }
+
+    function setVp(uint256 newVp) public onlyGovernance {
+        collateralRatio = newVp;
+    }
+
+    function setController(address newController) public onlyOwner {
+        _setController(newController);
+    }
+
+    function setTimelock(address newTimelock) public onlyOwner {
+        _setTimelock(newTimelock);
+    }
+
+    // ------------------------------------------------------------------------
+    // Setting of oracles
+    // ------------------------------------------------------------------------
+    function setAscBusdOracle(address oracleAddr) public onlyGovernance {
+        ascBusdOracle = IOracle(oracleAddr);
+    }
+
+    function setCrsBusdOracle(address oracleAddr) public onlyGovernance {
+        crsBusdOracle = IOracle(oracleAddr);
+    }
+
+    function setBusdChainLink(address chainlinkAddress) public onlyGovernance {
+        busdChainlink = IChainlink(chainlinkAddress);
+        busdPriceDecimals = busdChainlink.getDecimals();
+    }
+
+    function setBusdAddress(address newAddress) public onlyGovernance {
+        busdAddress = newAddress;
+    }
+    
+    // ------------------------------------------------------------------------
+    // Get ASC price in USD
+    // ------------------------------------------------------------------------
+    function getASCPrice() public view returns (uint256) {
+        return oraclePrice(Coin.ASC);
+    }
+
+    // ------------------------------------------------------------------------
+    // Get CRS price in USD
+    // ------------------------------------------------------------------------
+    function getCRSPrice() public view returns (uint256) {
+        return oraclePrice(Coin.CRS);
+    }
+
+    // ------------------------------------------------------------------------
+    // Get ASC price in USD
+    // ------------------------------------------------------------------------
+    function getBUSDPrice() public view returns (uint256) {
+        return uint256(busdChainlink.getLatestPrice()) * (CERES_PRECISION) / (uint256(10) ** busdPriceDecimals);
+    }
+
+    // ------------------------------------------------------------------------
+    // Get coin price in USD - internal
+    // ------------------------------------------------------------------------
+    function oraclePrice(Coin choice) internal view returns (uint256) {
+        // get BUSD price in USD
+        uint256 busdPriceInUSD = uint256(busdChainlink.getLatestPrice()) * (CERES_PRECISION) / (uint256(10) ** busdPriceDecimals);
+
+        uint256 priceVsBusd;
+
+        if (choice == Coin.ASC) {
+            priceVsBusd = uint256(ascBusdOracle.consult(busdAddress, CERES_PRECISION));
+        } else if (choice == Coin.CRS) {
+            priceVsBusd = uint256(crsBusdOracle.consult(busdAddress, CERES_PRECISION));
+        }
+
+        else revert("INVALID COIN!");
+
+        // return in 1e6 format
+        return busdPriceInUSD * CERES_PRECISION / priceVsBusd;
+    }
+
+}
+
+
+// File contracts/interface/IPool.sol
+
+
+pragma solidity ^0.8.4;
+
+interface IPool {
+
+    function collateralBalance() external view returns (uint256);
+}
+
+
+// File contracts/interface/IStakingManager.sol
+
+
+pragma solidity ^0.8.4;
+
+interface IStakingManager {
+
+    function stakings(address sender) external view returns (bool);
+
+    function stakingAddress(address staingToken) external view returns (address);
+}
+
+
+// File contracts/autopool/CeresPool.sol
+
+
+pragma solidity ^0.8.4;
+
+
+
+
+
+
+abstract contract CeresPool is Ownable, Governable, IPool {
+
+    uint256 public constant CERES_PRECISION = 1e6;  // 1000000 <=> 1 integer
+    uint256 public constant PRICE_TARGET = 1e6;  // 1:1 to USD
+
+    CeresAnchor public ceresAnchor;
+
+    IStakingManager public ism;
+
+    ASC public coinASC;
+    address public ascAddress;
+
+    CRS public coinCRS;
+    address public crsAddress;
+
+    uint256 public lastMintRatio;  // mint revenue ratio last time
+
+    uint256 public lastRedeemRatio;  // redeem revenue ratio last time
+
+    address public seigniorageGovern;
+
+    //****************
+    // MODIFIES
+    //****************
+    modifier onlyGovernance() {
+        require(msg.sender == owner() || msg.sender == timelock() || msg.sender == controller(), "Only Governance!");
+        _;
+    }
+
+    // ------------------------------------------------------------------------
+    // Setters
+    // ------------------------------------------------------------------------
+    function setStakingManager(address _stakingManager) public onlyGovernance {
+        ism = IStakingManager(_stakingManager);
+    }
+
+    function setCeresAnchor(address anchorAddress) public onlyGovernance {
+        ceresAnchor = CeresAnchor(anchorAddress);
+    }
+
+    function setSeigniorageGovern(address _seigniorageGovern) public onlyGovernance {
+        seigniorageGovern = _seigniorageGovern;
+    }
+
+    function setController(address newController) public onlyOwner {
+        _setController(newController);
+    }
+
+    function setTimelock(address newTimelock) public onlyOwner {
+        _setTimelock(newTimelock);
+    }
+
+
+    function determine() external virtual;
+
+    function mint(uint256 collateralAmount, uint256 crsAmount, uint256 ascOut) internal virtual;
+
+    function redeem(uint256 ascAmount, uint256 collateralOut, uint256 crsOut) internal virtual;
+
+}
+
+
+// File contracts/interface/IStaking.sol
+
+
+pragma solidity ^0.8.4;
+
+interface IStaking {
+
+    struct UserLock {
+        uint256 shareAmount;
+        uint256 timeEnd;
+    }
+
+    // Views
+    function totalStaking() external view returns (uint256);
+
+    function stakingBalanceOf(address account) external view returns (uint256);
+    
+    function totalShare() external view returns (uint256);
+
+    function shareBalanceOf(address account) external view returns (uint256);
+
+    function yieldAPR() external view returns (uint256);
+    
+    // Mutative
+    function stake(uint256 amount) external;
+
+    function withdraw(uint256 shareAmount) external;
+
+    function withdrawAll(uint256 shareAmount) external;
+
+    function reinvestReward() external;
+    
+    function notifyReinvest(address account, uint256 amount) external;
+    
+}
+
+
+// File contracts/interface/IMinter.sol
+
+
+pragma solidity ^0.8.4;
+
+interface IMinter is IPool{
+
+    function notifyMint(uint256 ascAmount, uint256 collateralAmount) external;
+
+    function claimMintWithPercent(uint256 percent) external;
+
+    function reinvestMint() external;
+
+}
+
+
+// File contracts/interface/IRedeemer.sol
+
+
+pragma solidity ^0.8.4;
+
+interface IRedeemer {
+
+    function notifyRedeem(uint256 ascAmount, uint256 collateral0Amount, uint256 collateral1Amount) external;
+
+    function claimRedeemWithPercent(uint256 percent) external;
+
+    function reinvestRedeem() external;
+    
+}
+
+
+// File contracts/autopool/CeresPoolBUSD.sol
+
+
+pragma solidity ^0.8.4;
+
+
+
+
+contract CeresPoolBUSD is CeresPool {
+
+    //****************
+    // ASSETS
+    //****************
+    IERC20 public BUSD;
+    address public busdAddress;
+
+    // ------------------------------------------------------------------------
+    // Constructor
+    // ------------------------------------------------------------------------
+    constructor(address busd, address asc, address crs, address _owner) Ownable(_owner) {
+
+        BUSD = IERC20(busd);
+        busdAddress = busd;
+
+        coinASC = ASC(asc);
+        ascAddress = asc;
+
+        coinCRS = CRS(crs);
+        crsAddress = crs;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Determine - auto mint or redeem according to the price of ASC
+    // ------------------------------------------------------------------------
+    function determine() external onlyGovernance override {
+
+        uint256 ascPrice = ceresAnchor.getASCPrice();
+        uint256 crsPrice = ceresAnchor.getCRSPrice();
+        uint256 busdPrice = ceresAnchor.getBUSDPrice();
+        uint256 colRatio = ceresAnchor.collateralRatio();
+
+        uint256 ascValue;
+        if (ascPrice > PRICE_TARGET + ceresAnchor.priceBand()) {
+
+            ascValue = nextMintValue();
+            mint(ascValue * colRatio / busdPrice, ascValue * (CERES_PRECISION - colRatio) / crsPrice, ascValue);
+            lastMintRatio = ascPrice - PRICE_TARGET;
+        } else if (ascPrice < PRICE_TARGET - ceresAnchor.priceBand()) {
+
+            ascValue = nextRedeemValue();
+            uint256 colRatioSquare = colRatio ** 2;
+            redeem(ascValue, ascValue * colRatioSquare / busdPrice / CERES_PRECISION,
+                ascValue * (CERES_PRECISION ** 2 - colRatioSquare) / crsPrice / CERES_PRECISION);
+            lastRedeemRatio = PRICE_TARGET - ascPrice;
+        }
+
+        // update cr
+        ceresAnchor.updateCollateralRatio();
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Calculate the mint value next time
+    // ------------------------------------------------------------------------
+    function nextMintValue() public view returns (uint256){
+
+        // v1: circulating calcu
+        uint256 v1 = ceresAnchor.CiRate() * coinASC.totalSupply() * ceresAnchor.Cp() / CERES_PRECISION ** 2;
+
+        // v2: collateral calcu
+        address BUSDStakingAddr = ism.stakingAddress(busdAddress);
+        address crsStakingAddr = ism.stakingAddress(crsAddress);
+
+        // TODO optimize zero condition
+        uint256 vCol = IPool(BUSDStakingAddr).collateralBalance() * ceresAnchor.Vp() * (uint256(10) ** coinASC.decimals())
+        / ceresAnchor.collateralRatio() / CERES_PRECISION;
+        uint256 vCrs = IPool(crsStakingAddr).collateralBalance() * ceresAnchor.Vp() * (uint256(10) ** coinASC.decimals())
+        / (CERES_PRECISION - ceresAnchor.collateralRatio()) / CERES_PRECISION;
+
+        uint256 v2 = SafeMath.min(vCol, vCrs);
+
+        return SafeMath.min(v1, v2);
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Calculate the redeem value next time
+    // ------------------------------------------------------------------------
+    function nextRedeemValue() public view returns (uint256){
+
+        uint256 v1 = ceresAnchor.CiRate() * coinASC.totalSupply() * ceresAnchor.Cp() / CERES_PRECISION ** 2;
+        uint256 v2 = collateralBalance() * ceresAnchor.Vp() * (uint256(10) ** coinASC.decimals())
+        / ceresAnchor.collateralRatio() / CERES_PRECISION;
+
+        return SafeMath.min(v1, v2);
+    }
+
+
+    function mint(uint256 busdAmount, uint256 crsAmount, uint256 ascOut) internal override {
+
+        uint256 colRaito = ceresAnchor.collateralRatio();
+
+        // seigniorage
+        uint256 ascToSeign = ascOut * ceresAnchor.seignioragePercent() / CERES_PRECISION;
+
+        // staking mint
+        uint256 ascToBusd = (ascOut - ascToSeign) * colRaito / CERES_PRECISION;
+        uint256 ascToCrs = ascOut - ascToSeign - ascToBusd;
+
+        address busdStakingAddr = ism.stakingAddress(busdAddress);
+        address crsStakingAddr = ism.stakingAddress(crsAddress);
+
+        // notify mint
+        IMinter(busdStakingAddr).notifyMint(ascToBusd, busdAmount);
+        IMinter(crsStakingAddr).notifyMint(ascToCrs, crsAmount);
+
+        // mint to
+        if (ascToSeign > 0)
+            coinASC.poolMint(seigniorageGovern, ascToSeign);
+
+        coinASC.poolMint(busdStakingAddr, ascToBusd);
+        coinASC.poolMint(crsStakingAddr, ascToCrs);
+
+    }
+
+    function redeem(uint256 ascAmount, uint256 busdOut, uint256 crsOut) internal override {
+
+        address ascStakingAddr = ism.stakingAddress(ascAddress);
+
+        // nofity redeem
+        IRedeemer(ascStakingAddr).notifyRedeem(ascAmount, crsOut, busdOut);
+
+        // collateral transfer to staking
+        BUSD.transfer(ascStakingAddr, busdOut);
+
+        // crs mint to staking
+        coinCRS.poolMint(ascStakingAddr, crsOut);
+
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Get collateral balalce of this pool in USD - ceres decimals
+    // ------------------------------------------------------------------------
+    function collateralBalance() public override view returns (uint256){
+        return BUSD.balanceOf(address(this)) * ceresAnchor.getBUSDPrice() / uint256(10) ** BUSD.decimals();
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Pool migration
+    // ------------------------------------------------------------------------
+    function migrate(address newPool) external onlyOwner {
+        uint256 amount = BUSD.balanceOf(address(this));
+        BUSD.transfer(newPool, amount);
+    }
 
 }

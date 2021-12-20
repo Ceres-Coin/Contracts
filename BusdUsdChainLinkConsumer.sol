@@ -1,7 +1,10 @@
-pragma solidity ^0.8.4;
+// Sources flattened with hardhat v2.6.3 https://hardhat.org
 
+// File contracts/interface/AggregatorV3Interface.sol
 
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
 interface AggregatorV3Interface {
 
     function decimals()
@@ -55,12 +58,23 @@ interface AggregatorV3Interface {
 }
 
 
+// File contracts/interface/IChainlink.sol
+
+
+pragma solidity ^0.8.0;
+
 interface IChainlink {
 
     function getLatestPrice() external view returns (int);
 
     function getDecimals() external view returns (uint8);
 }
+
+
+// File contracts/oracle/BusdUsdChainLinkConsumer.sol
+
+
+pragma solidity ^0.8.4;
 
 
 contract BusdUsdChainLinkConsumer is IChainlink{

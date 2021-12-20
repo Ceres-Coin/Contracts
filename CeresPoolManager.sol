@@ -1,28 +1,13 @@
 // Sources flattened with hardhat v2.6.3 https://hardhat.org
 
-// File contracts/interface/IOracle.sol
+// File contracts/interface/IPoolManager.sol
 
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
-interface IOracle {
+interface IPoolManager {
 
-    function consult(address token, uint amountIn) external view returns (uint amountOut);
-
-    function update() external;
-}
-
-
-// File contracts/interface/IChainlink.sol
-
-
-pragma solidity ^0.8.0;
-
-interface IChainlink {
-
-    function getLatestPrice() external view returns (int);
-
-    function getDecimals() external view returns (uint8);
+    function pools(address sender) external returns (bool);
 }
 
 
@@ -229,132 +214,49 @@ abstract contract Governable is Context {
 }
 
 
-// File contracts/autopool/CeresAnchor.sol
+// File contracts/autopool/CeresPoolManager.sol
 
 
 pragma solidity ^0.8.4;
 
 
 
+contract CeresPoolManager is IPoolManager, Ownable, Governable {
 
-contract CeresAnchor is Ownable, Governable {
-    
-    enum Coin {ASC, CRS}
+    address[] public poolsArray;
+    mapping(address => bool) public override pools;
 
-    //****************
-    // PRICER
-    //****************
-    address public busdAddress;
-
-    IChainlink public busdChainlink;
-    uint8 public busdPriceDecimals;
-
-    IOracle public ascBusdOracle;
-    IOracle public crsBusdOracle;
-
-    //****************
-    // SYSTEM PARAMS
-    //****************
-    uint256 public collateralRatio; // collateral ratio of asc
-    uint256 public lastUpdateTime; // last time update ratio
-    uint256 public ratioStep; // step that collateral rate changes every time
-    uint256 public priceBand; // threshold of automint / autoredeem
-    uint256 public updateCooldown; // cooldown between raito changes 
-
-    uint256 public constant CERES_PRECISION = 1e6;  // 1000000 <=> 1 integer
-    uint256 public constant PRICE_TARGET = 1e6;  // 1:1 to USD
-    uint256 public seignioragePercent = 5000;
-
-    //****************
-    // COEFFICIENT
-    //****************
-    uint256 public CiRate;
-    uint256 public Cp;
-    uint256 public Vp;
-
-
-    //****************
-    // MODIFIES
-    //****************
     modifier onlyGovernance() {
         require(msg.sender == owner() || msg.sender == timelock() || msg.sender == controller(), "Only Governance!");
         _;
     }
 
-    // ------------------------------------------------------------------------
-    // Constructor
-    // ------------------------------------------------------------------------
-    constructor(address _owner) Ownable(_owner){
-        
-        collateralRatio = 850000;
-        ratioStep = 2500;
-        priceBand = 5000;
-        updateCooldown = 3600;
+    constructor(address _owner) Ownable(_owner) {}
 
-        CiRate = 50000;
-        Cp = 1000000;
-        Vp = 500000;
+    // ------------------------------------------------------------------------
+    // Add a pool
+    // ------------------------------------------------------------------------
+    function addPool(address poolAddress) public onlyGovernance {
+        require(pools[poolAddress] == false, "pool already exists");
+        pools[poolAddress] = true;
+        poolsArray.push(poolAddress);
     }
 
 
     // ------------------------------------------------------------------------
-    // Update collateral ratio according to ASC/USD price in current
+    // Remove a pool
     // ------------------------------------------------------------------------
-    function updateCollateralRatio() public {
-        uint256 ascPrice = getASCPrice();
-        require(block.timestamp - lastUpdateTime >= updateCooldown, "Wait after cooldown!");
+    function removePool(address poolAddress) public onlyGovernance {
+        require(pools[poolAddress] == true, "pool doesn't exist");
 
-        if (ascPrice > PRICE_TARGET + priceBand) {
-            // decrease collateral ratio, minimum to 0
-            if (collateralRatio <= ratioStep)
-                collateralRatio = 0;
-            else
-                collateralRatio -= ratioStep;
-        } else if (ascPrice < PRICE_TARGET - priceBand) {
-            // increase collateral ratio, maximum to 1000000, i.e 100% in CERES_PRECISION
-            if (collateralRatio + ratioStep >= 1000000)
-                collateralRatio = 1000000;
-            else
-                collateralRatio += ratioStep;
+        delete pools[poolAddress];
+        for (uint i = 0; i < poolsArray.length; i++) {
+            if (poolsArray[i] == poolAddress) {
+                // will leave a zero address at this index
+                poolsArray[i] = address(0);
+                break;
+            }
         }
-
-        // update last time
-        lastUpdateTime = block.timestamp;
-    }
-
-    // ------------------------------------------------------------------------
-    // Setting of system of params
-    // ------------------------------------------------------------------------
-    function setRatioStep(uint256 newStep) public onlyGovernance {
-        ratioStep = newStep;
-    }
-
-    function setUpdateCooldown(uint256 newCooldown) public onlyGovernance {
-        updateCooldown = newCooldown;
-    }
-
-    function setPriceBand(uint256 newBand) public onlyGovernance {
-        priceBand = newBand;
-    }
-
-    function setCollateralRatio(uint256 newRatio) public onlyGovernance {
-        collateralRatio = newRatio;
-    }
-
-    function setSeignioragePercent(uint256 newPercent) public onlyGovernance {
-        seignioragePercent = newPercent;
-    }
-
-    function setCiRate(uint256 newCiRate) public onlyGovernance {
-        collateralRatio = newCiRate;
-    }
-
-    function setCp(uint256 newCp) public onlyGovernance {
-        collateralRatio = newCp;
-    }
-
-    function setVp(uint256 newVp) public onlyGovernance {
-        collateralRatio = newVp;
     }
 
     function setController(address newController) public onlyOwner {
@@ -364,67 +266,4 @@ contract CeresAnchor is Ownable, Governable {
     function setTimelock(address newTimelock) public onlyOwner {
         _setTimelock(newTimelock);
     }
-
-    // ------------------------------------------------------------------------
-    // Setting of oracles
-    // ------------------------------------------------------------------------
-    function setAscBusdOracle(address oracleAddr) public onlyGovernance {
-        ascBusdOracle = IOracle(oracleAddr);
-    }
-
-    function setCrsBusdOracle(address oracleAddr) public onlyGovernance {
-        crsBusdOracle = IOracle(oracleAddr);
-    }
-
-    function setBusdChainLink(address chainlinkAddress) public onlyGovernance {
-        busdChainlink = IChainlink(chainlinkAddress);
-        busdPriceDecimals = busdChainlink.getDecimals();
-    }
-
-    function setBusdAddress(address newAddress) public onlyGovernance {
-        busdAddress = newAddress;
-    }
-    
-    // ------------------------------------------------------------------------
-    // Get ASC price in USD
-    // ------------------------------------------------------------------------
-    function getASCPrice() public view returns (uint256) {
-        return oraclePrice(Coin.ASC);
-    }
-
-    // ------------------------------------------------------------------------
-    // Get CRS price in USD
-    // ------------------------------------------------------------------------
-    function getCRSPrice() public view returns (uint256) {
-        return oraclePrice(Coin.CRS);
-    }
-
-    // ------------------------------------------------------------------------
-    // Get ASC price in USD
-    // ------------------------------------------------------------------------
-    function getBUSDPrice() public view returns (uint256) {
-        return uint256(busdChainlink.getLatestPrice()) * (CERES_PRECISION) / (uint256(10) ** busdPriceDecimals);
-    }
-
-    // ------------------------------------------------------------------------
-    // Get coin price in USD - internal
-    // ------------------------------------------------------------------------
-    function oraclePrice(Coin choice) internal view returns (uint256) {
-        // get BUSD price in USD
-        uint256 busdPriceInUSD = uint256(busdChainlink.getLatestPrice()) * (CERES_PRECISION) / (uint256(10) ** busdPriceDecimals);
-
-        uint256 priceVsBusd;
-
-        if (choice == Coin.ASC) {
-            priceVsBusd = uint256(ascBusdOracle.consult(busdAddress, CERES_PRECISION));
-        } else if (choice == Coin.CRS) {
-            priceVsBusd = uint256(crsBusdOracle.consult(busdAddress, CERES_PRECISION));
-        }
-
-        else revert("INVALID COIN!");
-
-        // return in 1e6 format
-        return busdPriceInUSD * CERES_PRECISION / priceVsBusd;
-    }
-
 }
