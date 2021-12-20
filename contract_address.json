@@ -1,0 +1,38 @@
+[
+  {
+    "CeresPoolManager": "0x19C85F5Be3BC8C14039CB4C5DFEeC68D69395068"
+  },
+  {
+    "ASC": "0x3aade8Fa73e1B196541a539936b36808F503210F"
+  },
+  {
+    "StakingBUSD": "0x994380a8EF9c2cC2526e37F2cb786a3052E429C9"
+  },
+  {
+    "StakingCRS": "0x5b43302616B09D2b751fA0207e6B1f1b870273e4"
+  },
+  {
+    "AscBusdOracle": "0xE8f602cbb21C62AaB5Ec3865D916b6AF651f6EC2"
+  },
+  {
+    "StakingASC": "0x90c610Ba2B9A4BD5Ea9aDD319300fA41d16B8eBa"
+  },
+  {
+    "CeresPoolBUSD": "0x321c1BBD1385e5928B407F03f91a7A721cd81E58"
+  },
+  {
+    "BusdBusdhainLinkConsumer": "0xc834a6C509aD44Ffa3BaE1346a0b43CE3d47Ff29"
+  },
+  {
+    "CrsBusdOracle": "0x1B1194dB56943F03796Cd4eFDfD43ec8F69A25a3"
+  },
+  {
+    "CeresAnchor": "0x696Abb32023610C8DC4cb0E5893E7Dc923C40772"
+  },
+  {
+    "CeresStakingManager": "0x752c72AF8340e7332e11a556573bFc617ca6176a"
+  },
+  {
+    "CRS": "0xBFb974E8C90eFc008bD989015b529BCFc6a71352"
+  }
+]
