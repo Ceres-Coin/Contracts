@@ -1,9 +1,876 @@
-// Sources flattened with hardhat v2.6.3 https://hardhat.org
+// Sources flattened with hardhat v2.7.0 https://hardhat.org
 
-// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.4.0
+// File @openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.0 (token/ERC20/IERC20.sol)
+// OpenZeppelin Contracts (last updated v4.5.0) (utils/Address.sol)
+
+pragma solidity ^0.8.1;
+
+/**
+ * @dev Collection of functions related to the address type
+ */
+library AddressUpgradeable {
+    /**
+     * @dev Returns true if `account` is a contract.
+     *
+     * [IMPORTANT]
+     * ====
+     * It is unsafe to assume that an address for which this function returns
+     * false is an externally-owned account (EOA) and not a contract.
+     *
+     * Among others, `isContract` will return false for the following
+     * types of addresses:
+     *
+     *  - an externally-owned account
+     *  - a contract in construction
+     *  - an address where a contract will be created
+     *  - an address where a contract lived, but was destroyed
+     * ====
+     *
+     * [IMPORTANT]
+     * ====
+     * You shouldn't rely on `isContract` to protect against flash loan attacks!
+     *
+     * Preventing calls from contracts is highly discouraged. It breaks composability, breaks support for smart wallets
+     * like Gnosis Safe, and does not provide security since it can be circumvented by calling from a contract
+     * constructor.
+     * ====
+     */
+    function isContract(address account) internal view returns (bool) {
+        // This method relies on extcodesize/address.code.length, which returns 0
+        // for contracts in construction, since the code is only stored at the end
+        // of the constructor execution.
+
+        return account.code.length > 0;
+    }
+
+    /**
+     * @dev Replacement for Solidity's `transfer`: sends `amount` wei to
+     * `recipient`, forwarding all available gas and reverting on errors.
+     *
+     * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost
+     * of certain opcodes, possibly making contracts go over the 2300 gas limit
+     * imposed by `transfer`, making them unable to receive funds via
+     * `transfer`. {sendValue} removes this limitation.
+     *
+     * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].
+     *
+     * IMPORTANT: because control is transferred to `recipient`, care must be
+     * taken to not create reentrancy vulnerabilities. Consider using
+     * {ReentrancyGuard} or the
+     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
+     */
+    function sendValue(address payable recipient, uint256 amount) internal {
+        require(address(this).balance >= amount, "Address: insufficient balance");
+
+        (bool success, ) = recipient.call{value: amount}("");
+        require(success, "Address: unable to send value, recipient may have reverted");
+    }
+
+    /**
+     * @dev Performs a Solidity function call using a low level `call`. A
+     * plain `call` is an unsafe replacement for a function call: use this
+     * function instead.
+     *
+     * If `target` reverts with a revert reason, it is bubbled up by this
+     * function (like regular Solidity function calls).
+     *
+     * Returns the raw returned data. To convert to the expected return value,
+     * use https://solidity.readthedocs.io/en/latest/units-and-global-variables.html?highlight=abi.decode#abi-encoding-and-decoding-functions[`abi.decode`].
+     *
+     * Requirements:
+     *
+     * - `target` must be a contract.
+     * - calling `target` with `data` must not revert.
+     *
+     * _Available since v3.1._
+     */
+    function functionCall(address target, bytes memory data) internal returns (bytes memory) {
+        return functionCall(target, data, "Address: low-level call failed");
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`], but with
+     * `errorMessage` as a fallback revert reason when `target` reverts.
+     *
+     * _Available since v3.1._
+     */
+    function functionCall(
+        address target,
+        bytes memory data,
+        string memory errorMessage
+    ) internal returns (bytes memory) {
+        return functionCallWithValue(target, data, 0, errorMessage);
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
+     * but also transferring `value` wei to `target`.
+     *
+     * Requirements:
+     *
+     * - the calling contract must have an ETH balance of at least `value`.
+     * - the called Solidity function must be `payable`.
+     *
+     * _Available since v3.1._
+     */
+    function functionCallWithValue(
+        address target,
+        bytes memory data,
+        uint256 value
+    ) internal returns (bytes memory) {
+        return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCallWithValue-address-bytes-uint256-}[`functionCallWithValue`], but
+     * with `errorMessage` as a fallback revert reason when `target` reverts.
+     *
+     * _Available since v3.1._
+     */
+    function functionCallWithValue(
+        address target,
+        bytes memory data,
+        uint256 value,
+        string memory errorMessage
+    ) internal returns (bytes memory) {
+        require(address(this).balance >= value, "Address: insufficient balance for call");
+        require(isContract(target), "Address: call to non-contract");
+
+        (bool success, bytes memory returndata) = target.call{value: value}(data);
+        return verifyCallResult(success, returndata, errorMessage);
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
+     * but performing a static call.
+     *
+     * _Available since v3.3._
+     */
+    function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {
+        return functionStaticCall(target, data, "Address: low-level static call failed");
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],
+     * but performing a static call.
+     *
+     * _Available since v3.3._
+     */
+    function functionStaticCall(
+        address target,
+        bytes memory data,
+        string memory errorMessage
+    ) internal view returns (bytes memory) {
+        require(isContract(target), "Address: static call to non-contract");
+
+        (bool success, bytes memory returndata) = target.staticcall(data);
+        return verifyCallResult(success, returndata, errorMessage);
+    }
+
+    /**
+     * @dev Tool to verifies that a low level call was successful, and revert if it wasn't, either by bubbling the
+     * revert reason using the provided one.
+     *
+     * _Available since v4.3._
+     */
+    function verifyCallResult(
+        bool success,
+        bytes memory returndata,
+        string memory errorMessage
+    ) internal pure returns (bytes memory) {
+        if (success) {
+            return returndata;
+        } else {
+            // Look for revert reason and bubble it up if present
+            if (returndata.length > 0) {
+                // The easiest way to bubble the revert reason is using memory via assembly
+
+                assembly {
+                    let returndata_size := mload(returndata)
+                    revert(add(32, returndata), returndata_size)
+                }
+            } else {
+                revert(errorMessage);
+            }
+        }
+    }
+}
+
+
+// File @openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v4.5.0) (proxy/utils/Initializable.sol)
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed
+ * behind a proxy. Since proxied contracts do not make use of a constructor, it's common to move constructor logic to an
+ * external initializer function, usually called `initialize`. It then becomes necessary to protect this initializer
+ * function so it can only be called once. The {initializer} modifier provided by this contract will have this effect.
+ *
+ * TIP: To avoid leaving the proxy in an uninitialized state, the initializer function should be called as early as
+ * possible by providing the encoded function call as the `_data` argument to {ERC1967Proxy-constructor}.
+ *
+ * CAUTION: When used with inheritance, manual care must be taken to not invoke a parent initializer twice, or to ensure
+ * that all initializers are idempotent. This is not verified automatically as constructors are by Solidity.
+ *
+ * [CAUTION]
+ * ====
+ * Avoid leaving a contract uninitialized.
+ *
+ * An uninitialized contract can be taken over by an attacker. This applies to both a proxy and its implementation
+ * contract, which may impact the proxy. To initialize the implementation contract, you can either invoke the
+ * initializer manually, or you can include a constructor to automatically mark it as initialized when it is deployed:
+ *
+ * [.hljs-theme-light.nopadding]
+ * ```
+ * /// @custom:oz-upgrades-unsafe-allow constructor
+ * constructor() initializer {}
+ * ```
+ * ====
+ */
+abstract contract Initializable {
+    /**
+     * @dev Indicates that the contract has been initialized.
+     */
+    bool private _initialized;
+
+    /**
+     * @dev Indicates that the contract is in the process of being initialized.
+     */
+    bool private _initializing;
+
+    /**
+     * @dev Modifier to protect an initializer function from being invoked twice.
+     */
+    modifier initializer() {
+        // If the contract is initializing we ignore whether _initialized is set in order to support multiple
+        // inheritance patterns, but we only do this in the context of a constructor, because in other contexts the
+        // contract may have been reentered.
+        require(_initializing ? _isConstructor() : !_initialized, "Initializable: contract is already initialized");
+
+        bool isTopLevelCall = !_initializing;
+        if (isTopLevelCall) {
+            _initializing = true;
+            _initialized = true;
+        }
+
+        _;
+
+        if (isTopLevelCall) {
+            _initializing = false;
+        }
+    }
+
+    /**
+     * @dev Modifier to protect an initialization function so that it can only be invoked by functions with the
+     * {initializer} modifier, directly or indirectly.
+     */
+    modifier onlyInitializing() {
+        require(_initializing, "Initializable: contract is not initializing");
+        _;
+    }
+
+    function _isConstructor() private view returns (bool) {
+        return !AddressUpgradeable.isContract(address(this));
+    }
+}
+
+
+// File @openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Provides information about the current execution context, including the
+ * sender of the transaction and its data. While these are generally available
+ * via msg.sender and msg.data, they should not be accessed in such a direct
+ * manner, since when dealing with meta-transactions the account sending and
+ * paying for execution may not be the actual sender (as far as an application
+ * is concerned).
+ *
+ * This contract is only required for intermediate, library-like contracts.
+ */
+abstract contract ContextUpgradeable is Initializable {
+    function __Context_init() internal onlyInitializing {
+    }
+
+    function __Context_init_unchained() internal onlyInitializing {
+    }
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
+    }
+
+    function _msgData() internal view virtual returns (bytes calldata) {
+        return msg.data;
+    }
+
+    /**
+     * This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[50] private __gap;
+}
+
+
+// File @openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts v4.4.1 (access/Ownable.sol)
+
+pragma solidity ^0.8.0;
+
+
+/**
+ * @dev Contract module which provides a basic access control mechanism, where
+ * there is an account (an owner) that can be granted exclusive access to
+ * specific functions.
+ *
+ * By default, the owner account will be the one that deploys the contract. This
+ * can later be changed with {transferOwnership}.
+ *
+ * This module is used through inheritance. It will make available the modifier
+ * `onlyOwner`, which can be applied to your functions to restrict their use to
+ * the owner.
+ */
+abstract contract OwnableUpgradeable is Initializable, ContextUpgradeable {
+    address private _owner;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    /**
+     * @dev Initializes the contract setting the deployer as the initial owner.
+     */
+    function __Ownable_init() internal onlyInitializing {
+        __Ownable_init_unchained();
+    }
+
+    function __Ownable_init_unchained() internal onlyInitializing {
+        _transferOwnership(_msgSender());
+    }
+
+    /**
+     * @dev Returns the address of the current owner.
+     */
+    function owner() public view virtual returns (address) {
+        return _owner;
+    }
+
+    /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        require(owner() == _msgSender(), "Ownable: caller is not the owner");
+        _;
+    }
+
+    /**
+     * @dev Leaves the contract without owner. It will not be possible to call
+     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     *
+     * NOTE: Renouncing ownership will leave the contract without an owner,
+     * thereby removing any functionality that is only available to the owner.
+     */
+    function renounceOwnership() public virtual onlyOwner {
+        _transferOwnership(address(0));
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Can only be called by the current owner.
+     */
+    function transferOwnership(address newOwner) public virtual onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        _transferOwnership(newOwner);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Internal function without access restriction.
+     */
+    function _transferOwnership(address newOwner) internal virtual {
+        address oldOwner = _owner;
+        _owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
+    }
+
+    /**
+     * This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[49] private __gap;
+}
+
+
+// File @openzeppelin/contracts-upgradeable/interfaces/draft-IERC1822Upgradeable.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v4.5.0) (interfaces/draft-IERC1822.sol)
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev ERC1822: Universal Upgradeable Proxy Standard (UUPS) documents a method for upgradeability through a simplified
+ * proxy whose upgrades are fully controlled by the current implementation.
+ */
+interface IERC1822ProxiableUpgradeable {
+    /**
+     * @dev Returns the storage slot that the proxiable contract assumes is being used to store the implementation
+     * address.
+     *
+     * IMPORTANT: A proxy pointing at a proxiable contract should not be considered proxiable itself, because this risks
+     * bricking a proxy that upgrades to it, by delegating to itself until out of gas. Thus it is critical that this
+     * function revert if invoked through a proxy.
+     */
+    function proxiableUUID() external view returns (bytes32);
+}
+
+
+// File @openzeppelin/contracts-upgradeable/proxy/beacon/IBeaconUpgradeable.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts v4.4.1 (proxy/beacon/IBeacon.sol)
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev This is the interface that {BeaconProxy} expects of its beacon.
+ */
+interface IBeaconUpgradeable {
+    /**
+     * @dev Must return an address that can be used as a delegate call target.
+     *
+     * {BeaconProxy} will check that this address is a contract.
+     */
+    function implementation() external view returns (address);
+}
+
+
+// File @openzeppelin/contracts-upgradeable/utils/StorageSlotUpgradeable.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts v4.4.1 (utils/StorageSlot.sol)
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Library for reading and writing primitive types to specific storage slots.
+ *
+ * Storage slots are often used to avoid storage conflict when dealing with upgradeable contracts.
+ * This library helps with reading and writing to such slots without the need for inline assembly.
+ *
+ * The functions in this library return Slot structs that contain a `value` member that can be used to read or write.
+ *
+ * Example usage to set ERC1967 implementation slot:
+ * ```
+ * contract ERC1967 {
+ *     bytes32 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+ *
+ *     function _getImplementation() internal view returns (address) {
+ *         return StorageSlot.getAddressSlot(_IMPLEMENTATION_SLOT).value;
+ *     }
+ *
+ *     function _setImplementation(address newImplementation) internal {
+ *         require(Address.isContract(newImplementation), "ERC1967: new implementation is not a contract");
+ *         StorageSlot.getAddressSlot(_IMPLEMENTATION_SLOT).value = newImplementation;
+ *     }
+ * }
+ * ```
+ *
+ * _Available since v4.1 for `address`, `bool`, `bytes32`, and `uint256`._
+ */
+library StorageSlotUpgradeable {
+    struct AddressSlot {
+        address value;
+    }
+
+    struct BooleanSlot {
+        bool value;
+    }
+
+    struct Bytes32Slot {
+        bytes32 value;
+    }
+
+    struct Uint256Slot {
+        uint256 value;
+    }
+
+    /**
+     * @dev Returns an `AddressSlot` with member `value` located at `slot`.
+     */
+    function getAddressSlot(bytes32 slot) internal pure returns (AddressSlot storage r) {
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    /**
+     * @dev Returns an `BooleanSlot` with member `value` located at `slot`.
+     */
+    function getBooleanSlot(bytes32 slot) internal pure returns (BooleanSlot storage r) {
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    /**
+     * @dev Returns an `Bytes32Slot` with member `value` located at `slot`.
+     */
+    function getBytes32Slot(bytes32 slot) internal pure returns (Bytes32Slot storage r) {
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    /**
+     * @dev Returns an `Uint256Slot` with member `value` located at `slot`.
+     */
+    function getUint256Slot(bytes32 slot) internal pure returns (Uint256Slot storage r) {
+        assembly {
+            r.slot := slot
+        }
+    }
+}
+
+
+// File @openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v4.5.0) (proxy/ERC1967/ERC1967Upgrade.sol)
+
+pragma solidity ^0.8.2;
+
+
+
+
+
+/**
+ * @dev This abstract contract provides getters and event emitting update functions for
+ * https://eips.ethereum.org/EIPS/eip-1967[EIP1967] slots.
+ *
+ * _Available since v4.1._
+ *
+ * @custom:oz-upgrades-unsafe-allow delegatecall
+ */
+abstract contract ERC1967UpgradeUpgradeable is Initializable {
+    function __ERC1967Upgrade_init() internal onlyInitializing {
+    }
+
+    function __ERC1967Upgrade_init_unchained() internal onlyInitializing {
+    }
+    // This is the keccak-256 hash of "eip1967.proxy.rollback" subtracted by 1
+    bytes32 private constant _ROLLBACK_SLOT = 0x4910fdfa16fed3260ed0e7147f7cc6da11a60208b5b9406d12a635614ffd9143;
+
+    /**
+     * @dev Storage slot with the address of the current implementation.
+     * This is the keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1, and is
+     * validated in the constructor.
+     */
+    bytes32 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+
+    /**
+     * @dev Emitted when the implementation is upgraded.
+     */
+    event Upgraded(address indexed implementation);
+
+    /**
+     * @dev Returns the current implementation address.
+     */
+    function _getImplementation() internal view returns (address) {
+        return StorageSlotUpgradeable.getAddressSlot(_IMPLEMENTATION_SLOT).value;
+    }
+
+    /**
+     * @dev Stores a new address in the EIP1967 implementation slot.
+     */
+    function _setImplementation(address newImplementation) private {
+        require(AddressUpgradeable.isContract(newImplementation), "ERC1967: new implementation is not a contract");
+        StorageSlotUpgradeable.getAddressSlot(_IMPLEMENTATION_SLOT).value = newImplementation;
+    }
+
+    /**
+     * @dev Perform implementation upgrade
+     *
+     * Emits an {Upgraded} event.
+     */
+    function _upgradeTo(address newImplementation) internal {
+        _setImplementation(newImplementation);
+        emit Upgraded(newImplementation);
+    }
+
+    /**
+     * @dev Perform implementation upgrade with additional setup call.
+     *
+     * Emits an {Upgraded} event.
+     */
+    function _upgradeToAndCall(
+        address newImplementation,
+        bytes memory data,
+        bool forceCall
+    ) internal {
+        _upgradeTo(newImplementation);
+        if (data.length > 0 || forceCall) {
+            _functionDelegateCall(newImplementation, data);
+        }
+    }
+
+    /**
+     * @dev Perform implementation upgrade with security checks for UUPS proxies, and additional setup call.
+     *
+     * Emits an {Upgraded} event.
+     */
+    function _upgradeToAndCallUUPS(
+        address newImplementation,
+        bytes memory data,
+        bool forceCall
+    ) internal {
+        // Upgrades from old implementations will perform a rollback test. This test requires the new
+        // implementation to upgrade back to the old, non-ERC1822 compliant, implementation. Removing
+        // this special case will break upgrade paths from old UUPS implementation to new ones.
+        if (StorageSlotUpgradeable.getBooleanSlot(_ROLLBACK_SLOT).value) {
+            _setImplementation(newImplementation);
+        } else {
+            try IERC1822ProxiableUpgradeable(newImplementation).proxiableUUID() returns (bytes32 slot) {
+                require(slot == _IMPLEMENTATION_SLOT, "ERC1967Upgrade: unsupported proxiableUUID");
+            } catch {
+                revert("ERC1967Upgrade: new implementation is not UUPS");
+            }
+            _upgradeToAndCall(newImplementation, data, forceCall);
+        }
+    }
+
+    /**
+     * @dev Storage slot with the admin of the contract.
+     * This is the keccak-256 hash of "eip1967.proxy.admin" subtracted by 1, and is
+     * validated in the constructor.
+     */
+    bytes32 internal constant _ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+
+    /**
+     * @dev Emitted when the admin account has changed.
+     */
+    event AdminChanged(address previousAdmin, address newAdmin);
+
+    /**
+     * @dev Returns the current admin.
+     */
+    function _getAdmin() internal view returns (address) {
+        return StorageSlotUpgradeable.getAddressSlot(_ADMIN_SLOT).value;
+    }
+
+    /**
+     * @dev Stores a new address in the EIP1967 admin slot.
+     */
+    function _setAdmin(address newAdmin) private {
+        require(newAdmin != address(0), "ERC1967: new admin is the zero address");
+        StorageSlotUpgradeable.getAddressSlot(_ADMIN_SLOT).value = newAdmin;
+    }
+
+    /**
+     * @dev Changes the admin of the proxy.
+     *
+     * Emits an {AdminChanged} event.
+     */
+    function _changeAdmin(address newAdmin) internal {
+        emit AdminChanged(_getAdmin(), newAdmin);
+        _setAdmin(newAdmin);
+    }
+
+    /**
+     * @dev The storage slot of the UpgradeableBeacon contract which defines the implementation for this proxy.
+     * This is bytes32(uint256(keccak256('eip1967.proxy.beacon')) - 1)) and is validated in the constructor.
+     */
+    bytes32 internal constant _BEACON_SLOT = 0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50;
+
+    /**
+     * @dev Emitted when the beacon is upgraded.
+     */
+    event BeaconUpgraded(address indexed beacon);
+
+    /**
+     * @dev Returns the current beacon.
+     */
+    function _getBeacon() internal view returns (address) {
+        return StorageSlotUpgradeable.getAddressSlot(_BEACON_SLOT).value;
+    }
+
+    /**
+     * @dev Stores a new beacon in the EIP1967 beacon slot.
+     */
+    function _setBeacon(address newBeacon) private {
+        require(AddressUpgradeable.isContract(newBeacon), "ERC1967: new beacon is not a contract");
+        require(
+            AddressUpgradeable.isContract(IBeaconUpgradeable(newBeacon).implementation()),
+            "ERC1967: beacon implementation is not a contract"
+        );
+        StorageSlotUpgradeable.getAddressSlot(_BEACON_SLOT).value = newBeacon;
+    }
+
+    /**
+     * @dev Perform beacon upgrade with additional setup call. Note: This upgrades the address of the beacon, it does
+     * not upgrade the implementation contained in the beacon (see {UpgradeableBeacon-_setImplementation} for that).
+     *
+     * Emits a {BeaconUpgraded} event.
+     */
+    function _upgradeBeaconToAndCall(
+        address newBeacon,
+        bytes memory data,
+        bool forceCall
+    ) internal {
+        _setBeacon(newBeacon);
+        emit BeaconUpgraded(newBeacon);
+        if (data.length > 0 || forceCall) {
+            _functionDelegateCall(IBeaconUpgradeable(newBeacon).implementation(), data);
+        }
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],
+     * but performing a delegate call.
+     *
+     * _Available since v3.4._
+     */
+    function _functionDelegateCall(address target, bytes memory data) private returns (bytes memory) {
+        require(AddressUpgradeable.isContract(target), "Address: delegate call to non-contract");
+
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, bytes memory returndata) = target.delegatecall(data);
+        return AddressUpgradeable.verifyCallResult(success, returndata, "Address: low-level delegate call failed");
+    }
+
+    /**
+     * This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[50] private __gap;
+}
+
+
+// File @openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v4.5.0) (proxy/utils/UUPSUpgradeable.sol)
+
+pragma solidity ^0.8.0;
+
+
+
+/**
+ * @dev An upgradeability mechanism designed for UUPS proxies. The functions included here can perform an upgrade of an
+ * {ERC1967Proxy}, when this contract is set as the implementation behind such a proxy.
+ *
+ * A security mechanism ensures that an upgrade does not turn off upgradeability accidentally, although this risk is
+ * reinstated if the upgrade retains upgradeability but removes the security mechanism, e.g. by replacing
+ * `UUPSUpgradeable` with a custom implementation of upgrades.
+ *
+ * The {_authorizeUpgrade} function must be overridden to include access restriction to the upgrade mechanism.
+ *
+ * _Available since v4.1._
+ */
+abstract contract UUPSUpgradeable is Initializable, IERC1822ProxiableUpgradeable, ERC1967UpgradeUpgradeable {
+    function __UUPSUpgradeable_init() internal onlyInitializing {
+    }
+
+    function __UUPSUpgradeable_init_unchained() internal onlyInitializing {
+    }
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable state-variable-assignment
+    address private immutable __self = address(this);
+
+    /**
+     * @dev Check that the execution is being performed through a delegatecall call and that the execution context is
+     * a proxy contract with an implementation (as defined in ERC1967) pointing to self. This should only be the case
+     * for UUPS and transparent proxies that are using the current contract as their implementation. Execution of a
+     * function through ERC1167 minimal proxies (clones) would not normally pass this test, but is not guaranteed to
+     * fail.
+     */
+    modifier onlyProxy() {
+        require(address(this) != __self, "Function must be called through delegatecall");
+        require(_getImplementation() == __self, "Function must be called through active proxy");
+        _;
+    }
+
+    /**
+     * @dev Check that the execution is not being performed through a delegate call. This allows a function to be
+     * callable on the implementing contract but not through proxies.
+     */
+    modifier notDelegated() {
+        require(address(this) == __self, "UUPSUpgradeable: must not be called through delegatecall");
+        _;
+    }
+
+    /**
+     * @dev Implementation of the ERC1822 {proxiableUUID} function. This returns the storage slot used by the
+     * implementation. It is used to validate that the this implementation remains valid after an upgrade.
+     *
+     * IMPORTANT: A proxy pointing at a proxiable contract should not be considered proxiable itself, because this risks
+     * bricking a proxy that upgrades to it, by delegating to itself until out of gas. Thus it is critical that this
+     * function revert if invoked through a proxy. This is guaranteed by the `notDelegated` modifier.
+     */
+    function proxiableUUID() external view virtual override notDelegated returns (bytes32) {
+        return _IMPLEMENTATION_SLOT;
+    }
+
+    /**
+     * @dev Upgrade the implementation of the proxy to `newImplementation`.
+     *
+     * Calls {_authorizeUpgrade}.
+     *
+     * Emits an {Upgraded} event.
+     */
+    function upgradeTo(address newImplementation) external virtual onlyProxy {
+        _authorizeUpgrade(newImplementation);
+        _upgradeToAndCallUUPS(newImplementation, new bytes(0), false);
+    }
+
+    /**
+     * @dev Upgrade the implementation of the proxy to `newImplementation`, and subsequently execute the function call
+     * encoded in `data`.
+     *
+     * Calls {_authorizeUpgrade}.
+     *
+     * Emits an {Upgraded} event.
+     */
+    function upgradeToAndCall(address newImplementation, bytes memory data) external payable virtual onlyProxy {
+        _authorizeUpgrade(newImplementation);
+        _upgradeToAndCallUUPS(newImplementation, data, true);
+    }
+
+    /**
+     * @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract. Called by
+     * {upgradeTo} and {upgradeToAndCall}.
+     *
+     * Normally, this function will use an xref:access.adoc[access control] modifier such as {Ownable-onlyOwner}.
+     *
+     * ```solidity
+     * function _authorizeUpgrade(address) internal override onlyOwner {}
+     * ```
+     */
+    function _authorizeUpgrade(address newImplementation) internal virtual;
+
+    /**
+     * This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[50] private __gap;
+}
+
+
+// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/IERC20.sol)
 
 pragma solidity ^0.8.0;
 
@@ -22,13 +889,13 @@ interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
 
     /**
-     * @dev Moves `amount` tokens from the caller's account to `recipient`.
+     * @dev Moves `amount` tokens from the caller's account to `to`.
      *
      * Returns a boolean value indicating whether the operation succeeded.
      *
      * Emits a {Transfer} event.
      */
-    function transfer(address recipient, uint256 amount) external returns (bool);
+    function transfer(address to, uint256 amount) external returns (bool);
 
     /**
      * @dev Returns the remaining number of tokens that `spender` will be
@@ -56,7 +923,7 @@ interface IERC20 {
     function approve(address spender, uint256 amount) external returns (bool);
 
     /**
-     * @dev Moves `amount` tokens from `sender` to `recipient` using the
+     * @dev Moves `amount` tokens from `from` to `to` using the
      * allowance mechanism. `amount` is then deducted from the caller's
      * allowance.
      *
@@ -65,8 +932,8 @@ interface IERC20 {
      * Emits a {Transfer} event.
      */
     function transferFrom(
-        address sender,
-        address recipient,
+        address from,
+        address to,
         uint256 amount
     ) external returns (bool);
 
@@ -86,160 +953,129 @@ interface IERC20 {
 }
 
 
-// File contracts/interface/ICeresFactory.sol
+// File @chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol@v0.3.1
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface AggregatorV3Interface {
+    function decimals() external view returns (uint8);
+
+    function description() external view returns (string memory);
+
+    function version() external view returns (uint256);
+
+    // getRoundData and latestRoundData should both raise "No data present"
+    // if they do not have data to report, instead of returning unset values
+    // which could be misinterpreted as actual reported values.
+    function getRoundData(uint80 _roundId)
+    external
+    view
+    returns (
+        uint80 roundId,
+        int256 answer,
+        uint256 startedAt,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    );
+
+    function latestRoundData()
+    external
+    view
+    returns (
+        uint80 roundId,
+        int256 answer,
+        uint256 startedAt,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    );
+}
+
+
+// File contracts/interfaces/ICeresFactory.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 interface ICeresFactory {
-    
     struct TokenInfo {
-        address tokenAddress;
+        address token;
         uint256 tokenType; // 1: asc, 2: crs, 3: col, 4: vol;
-        address stakingAddress;
-        address oracleAddress;
+        address staking;
+        address priceFeed;
+        bool isChainlinkFeed;
         bool isStakingRewards;
         bool isStakingMineable;
     }
 
     /* ---------- Views ---------- */
-    function getBank() external view returns (address);
-    function getReward() external view returns (address);
+    function ceresBank() external view returns (address);
+    function ceresReward() external view returns (address);
+    function ceresMiner() external view returns (address);
     function getTokenInfo(address token) external returns(TokenInfo memory);
     function getStaking(address token) external view returns (address);
-    function getOracle(address token) external view returns (address);
-    function isValidStaking(address sender) external view returns (bool);
+    function getPriceFeed(address token) external view returns (address);
+    function isStaking(address sender) external view returns (bool);
     function volTokens(uint256 index) external view returns (address);
+    function owner() external view returns (address);
+    function governorTimelock() external view returns (address);
 
     function getTokens() external view returns (address[] memory);
     function getTokensLength() external view returns (uint256);
     function getVolTokensLength() external view returns (uint256);
-    function getValidStakings() external view returns (address[] memory);
     function getTokenPrice(address token) external view returns(uint256);
+    function isChainlinkFeed(address token) external view returns (bool);
     function isStakingRewards(address staking) external view returns (bool);
     function isStakingMineable(address staking) external view returns (bool);
+    function oraclePeriod() external view returns (uint256);
 
-    /* ---------- Functions ---------- */
-    function setBank(address newAddress) external;
-    function setReward(address newReward) external;
-    function setCreator(address creator) external;
-    function setTokenType(address token, uint256 tokenType) external;
-    function setStaking(address token, address staking) external;
-    function setOracle(address token, address oracle) external;
-    function setIsStakingRewards(address token, bool _isStakingRewards) external;
-    function setIsStakingMineable(address token, bool _isStakingMineable) external;
+    /* ---------- Public Functions ---------- */
     function updateOracles(address[] memory tokens) external;
     function updateOracle(address token) external;
     function addStaking(address token, uint256 tokenType, address staking, address oracle, bool _isStakingRewards, bool _isStakingMineable) external;
     function removeStaking(address token, address staking) external;
-
+    /* ---------- Setting Functions ---------- */
+    function setCeresBank(address _ceresBank) external;
+    function setCeresReward(address _ceresReward) external;
+    function setCeresMiner(address _ceresMiner) external;
+    function setCeresCreator(address _ceresCreator) external;
+    function setTokenType(address token, uint256 tokenType) external;
+    function setStaking(address token, address staking) external;
+    function setIsStakingRewards(address token, bool _isStakingRewards) external;
+    function setIsStakingMineable(address token, bool _isStakingMineable) external;
     /* ---------- RRA ---------- */
-    function createStaking(address token, bool ifCreateOracle) external returns (address staking, address oracle);
-    function createStakingWithLiquidity(address token, uint256 tokenAmount, uint256 quoteAmount, bool ifCreateOracle) external returns (address staking, address oracle);
-    function createOracle(address token) external returns (address);
-
+    function createStaking(address token, address chainlinkFeed, address quoteToken) external returns (address staking);
+    function createOracle(address token, address quoteToken) external returns (address);
 }
 
 
-// File contracts/interface/ICeresCreator.sol
+// File contracts/interfaces/ICeresCreator.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 interface ICeresCreator {
-    
-    /* ---------- Views ---------- */
-    function quoteToken() external view returns (address);
 
     /* ---------- Functions ---------- */
     function createStaking(address token) external returns (address);
-    function createOracle(address token) external returns (address);
-    function addLiquidity(address token, uint256 tokenAmount, uint256 quoteAmount, address account) external;
+    function createOracle(address token, address quoteToken) external returns (address);
 }
 
 
-// File contracts/interface/IOracle.sol
+// File contracts/interfaces/IOracle.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 interface IOracle {
-
     /* ---------- Views ---------- */
     function token() external view returns (address);
     function getPrice() external view returns (uint256);
     function updatable() external view returns (bool);
+    function period() external view returns (uint256);
 
     /* ---------- Functions ---------- */
     function update() external;
-}
-
-
-// File @openzeppelin/contracts/utils/Context.sol@v4.4.0
-
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.0 (utils/Context.sol)
-
-pragma solidity ^0.8.0;
-
-/**
- * @dev Provides information about the current execution context, including the
- * sender of the transaction and its data. While these are generally available
- * via msg.sender and msg.data, they should not be accessed in such a direct
- * manner, since when dealing with meta-transactions the account sending and
- * paying for execution may not be the actual sender (as far as an application
- * is concerned).
- *
- * This contract is only required for intermediate, library-like contracts.
- */
-abstract contract Context {
-    function _msgSender() internal view virtual returns (address) {
-        return msg.sender;
-    }
-
-    function _msgData() internal view virtual returns (bytes calldata) {
-        return msg.data;
-    }
-}
-
-
-// File contracts/common/Ownable.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-abstract contract Ownable is Context {
-    
-    address private _owner;
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-    
-    constructor(address _owner_) {
-        _setOwner(_owner_);
-    }
-    
-    function owner() public view virtual returns (address) {
-        return _owner;
-    }
-    
-    modifier onlyOwner() {
-        require(owner() == _msgSender(), "Only Owner!");
-        _;
-    }
-    
-    function renounceOwnership() public virtual onlyOwner {
-        _setOwner(address(0));
-    }
-
-    function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
-        _setOwner(newOwner);
-    }
-
-    function _setOwner(address newOwner) private {
-        address oldOwner = _owner;
-        _owner = newOwner;
-        emit OwnershipTransferred(oldOwner, newOwner);
-    }
 }
 
 
@@ -252,27 +1088,39 @@ pragma solidity ^0.8.4;
 
 
 
-contract CeresFactory is ICeresFactory, Ownable {
 
-    address public override getBank;
-    address public override getReward;
-    uint256 public stakingCount;
+
+
+contract CeresFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, ICeresFactory {
+
+    address public override ceresBank;
+    address public override ceresReward;
+    address public override ceresMiner;
     address[] public tokens;
     address[] public override volTokens;
     mapping(address => TokenInfo) public tokenInfo;
-    mapping(address => bool) public override isValidStaking;
-    ICeresCreator public creator;
+    mapping(address => bool) public override isStaking;
+    address public override governorTimelock;
+    ICeresCreator public ceresCreator;
+    uint256 public override oraclePeriod;
 
     modifier tokenAdded(address token) {
-        require(tokenInfo[token].tokenAddress != address(0), "CeresFactory: Token is not added");
+        require(tokenInfo[token].token != address(0), "CeresFactory: Token is not added!");
         _;
     }
 
-    constructor(address _owner, address _creator) Ownable(_owner) {
-        creator = ICeresCreator(_creator);
+    modifier onlyOwnerOrGovernance() {
+        require(msg.sender == owner() || msg.sender == governorTimelock, "CeresFactory: Only owner or governance timelock!");
+        _;
     }
 
-    /* ---------- Views ---------- */
+    function initialize(address _creator) public initializer {
+        OwnableUpgradeable.__Ownable_init();
+        ceresCreator = ICeresCreator(_creator);
+        oraclePeriod = 5 seconds; // FIXME k: testnet value 
+    }
+
+    /* views */
     function getTokens() external view override returns (address[] memory){
         return tokens;
     }
@@ -290,15 +1138,15 @@ contract CeresFactory is ICeresFactory, Ownable {
     }
 
     function getStaking(address token) external view override returns (address) {
-        return tokenInfo[token].stakingAddress;
+        return tokenInfo[token].staking;
     }
 
-    function getOracle(address token) external view override returns (address) {
-        return tokenInfo[token].oracleAddress;
+    function getPriceFeed(address token) external view override returns (address) {
+        return tokenInfo[token].priceFeed;
     }
 
-    function getQuoteToken() external view returns (address) {
-        return creator.quoteToken();
+    function isChainlinkFeed(address token) external view override returns (bool){
+        return tokenInfo[token].isChainlinkFeed;
     }
 
     function isStakingRewards(address staking) external view override returns (bool) {
@@ -310,153 +1158,143 @@ contract CeresFactory is ICeresFactory, Ownable {
     }
 
     function getTokenPrice(address token) external view override returns (uint256) {
-        return IOracle(tokenInfo[token].oracleAddress).getPrice();
-    }
 
-    function getValidStakings() external view override returns (address[] memory _stakings){
-        _stakings = new address[](stakingCount);
-
-        uint256 index = 0;
-        for (uint256 i = 0; i < tokens.length; i++) {
-            address staking = tokenInfo[tokens[i]].stakingAddress;
-            if (staking != address(0)) {
-                _stakings[index] = staking;
-                index++;
-            }
+        if (tokenInfo[token].isChainlinkFeed) {
+            AggregatorV3Interface chainlinkFeed = AggregatorV3Interface(tokenInfo[token].priceFeed);
+            (,int256 quotePrice,,,) = chainlinkFeed.latestRoundData();
+            return uint256(quotePrice) * 1e6 / 10 ** chainlinkFeed.decimals();
+        } else {
+            return IOracle(tokenInfo[token].priceFeed).getPrice();
         }
-        return _stakings;
     }
 
-    /* ---------- RAA ---------- */
-    function createStaking(address token, bool ifCreateOracle) external override returns (address staking, address oracle){
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwnerOrGovernance {}
 
-        require(tokenInfo[token].tokenAddress == address(0), "CeresFactory: Staking already created!");
-
-        staking = creator.createStaking(token);
-        tokenInfo[token].tokenAddress = token;
-        tokenInfo[token].stakingAddress = staking;
-
-        if (ifCreateOracle) {
-            oracle = createOracle(token);
-            tokenInfo[token].oracleAddress = oracle;
-        }
-
-        tokens.push(token);
-        stakingCount++;
-        isValidStaking[staking] = true;
+    function owner() public view override(ICeresFactory, OwnableUpgradeable) returns (address) {
+        return OwnableUpgradeable.owner();
     }
 
-    function createStakingWithLiquidity(address token, uint256 tokenAmount, uint256 quoteAmount, bool ifCreateOracle)
-        external override returns (address staking, address oracle){
+    /* RAA */
+    function createStaking(address token, address chainlinkFeed, address quoteToken) external override returns (address staking){
+        require(tokenInfo[token].token == address(0), "CeresFactory: Staking already created!");
 
-        require(tokenInfo[token].tokenAddress == address(0), "CeresFactory: Staking already created!");
+        staking = ceresCreator.createStaking(token);
+        tokenInfo[token].token = token;
+        tokenInfo[token].staking = staking;
 
-        staking = creator.createStaking(token);
-
-        // create pair, add liquidity
-        IERC20(token).transferFrom(msg.sender, address(creator), tokenAmount);
-        IERC20(creator.quoteToken()).transferFrom(msg.sender, address(creator), quoteAmount);
-        creator.addLiquidity(token, tokenAmount, quoteAmount, msg.sender);
-
-        tokenInfo[token].tokenAddress = token;
-        tokenInfo[token].stakingAddress = staking;
-
-        if (ifCreateOracle) {
-            oracle = createOracle(token);
-            tokenInfo[token].oracleAddress = oracle;
+        if (chainlinkFeed != address(0)) {
+            tokenInfo[token].priceFeed = chainlinkFeed;
+            tokenInfo[token].isChainlinkFeed = true;
+        } else if (quoteToken != address(0)) {
+            tokenInfo[token].priceFeed = createOracle(token, quoteToken);
         }
 
         tokens.push(token);
-        stakingCount++;
-        isValidStaking[staking] = true;
+        isStaking[staking] = true;
     }
 
-    function createOracle(address token) public override returns (address oracle) {
-        require(tokenInfo[token].oracleAddress == address(0), "CeresFactory: Oracle already created!");
+    function createOracle(address token, address quoteToken) public override returns (address oracle) {
+        require(tokenInfo[token].priceFeed == address(0), "CeresFactory: Oracle already created!");
+        require(tokenInfo[quoteToken].priceFeed != address(0), "CeresCreator: QuoteToken has no price feed!");
+        require(tokenInfo[quoteToken].isChainlinkFeed, "CeresCreator: QuoteToken should be chainlink feed!");
 
-        oracle = creator.createOracle(token);
-        tokenInfo[token].oracleAddress = oracle;
+        oracle = ceresCreator.createOracle(token, quoteToken);
+        tokenInfo[token].priceFeed = oracle;
     }
 
-    /* ---------- Functions ---------- */
-    function addStaking(address token, uint256 tokenType, address staking, address oracle, bool _isStakingRewards,
-        bool _isStakingMineable) external override onlyOwner {
+    /* Public Functions */
+    function addStaking(address _token, uint256 _tokenType, address _staking, address _oracle, bool _isStakingRewards,
+        bool _isStakingMineable) external override onlyOwnerOrGovernance {
 
-        require(tokenInfo[token].tokenAddress == address(0), "CeresFactory: Staking already added!");
-        require(token != address(0) && staking != address(0), "CeresFactory: Staking parameters can not be zero address!");
-        require(tokenType > 0, "CeresFactory: Token type must be bigger than zero!");
+        require(tokenInfo[_token].token == address(0), "CeresFactory: Staking already added");
+        require(_token != address(0) && _staking != address(0), "CeresFactory: Staking Parmeters can not be zero address!");
+        require(_tokenType > 0, "CeresFactory: Token type must be bigger than zero!");
 
-        _beforeTypeChange(token, tokenType);
+        _beforeTypeChange(_token, _tokenType);
+        tokenInfo[_token].token = _token;
+        tokenInfo[_token].tokenType = _tokenType;
+        tokenInfo[_token].staking = _staking;
+        tokenInfo[_token].isStakingRewards = _isStakingRewards;
+        tokenInfo[_token].isStakingMineable = _isStakingMineable;
+        tokens.push(_token);
 
-        tokenInfo[token].tokenAddress = token;
-        tokenInfo[token].tokenType = tokenType;
-        tokenInfo[token].stakingAddress = staking;
-        tokenInfo[token].isStakingRewards = _isStakingRewards;
-        tokenInfo[token].isStakingMineable = _isStakingMineable;
-        tokens.push(token);
-
-        if (oracle != address(0))
-            tokenInfo[token].oracleAddress = oracle;
-
-        stakingCount ++;
-        isValidStaking[staking] = true;
+        if (_oracle != address(0)) {
+            tokenInfo[_token].priceFeed = _oracle;
+        }
+        isStaking[_staking] = true;
     }
 
-    function removeStaking(address token, address staking) external override onlyOwner {
-        isValidStaking[staking] = false;
-        if (tokenInfo[token].stakingAddress == staking)
-            tokenInfo[token].stakingAddress = address(0);
-        stakingCount--;
+    function removeStaking(address _token, address _staking) external override onlyOwnerOrGovernance {
+        isStaking[_staking] = false;
+        if (tokenInfo[_token].staking == _staking)
+            tokenInfo[_token].staking = address(0);
     }
-    
+
     function updateOracles(address[] memory _tokens) external override {
-        for (uint256 i = 0; i < _tokens.length; i++)
+        for (uint i = 0; i < _tokens.length; i++)
             updateOracle(_tokens[i]);
     }
 
-    function updateOracle(address token) public override {
-        address oracle = tokenInfo[token].oracleAddress;
-        if (IOracle(oracle).updatable())
+    function updateOracle(address _token) public override {
+        address oracle = tokenInfo[_token].priceFeed;
+        if (!tokenInfo[_token].isChainlinkFeed && IOracle(oracle).updatable())
             IOracle(oracle).update();
     }
 
-    /* ---------- Settings ---------- */
-    function setBank(address _bank) external override onlyOwner {
-        getBank = _bank;
+    /* Settings */
+    function setCeresBank(address _ceresBank) external override onlyOwnerOrGovernance {
+        ceresBank = _ceresBank;
     }
 
-    function setCreator(address _creator) external override onlyOwner {
-        creator = ICeresCreator(_creator);
+    function setCeresCreator(address _ceresCreator) external override onlyOwnerOrGovernance {
+        ceresCreator = ICeresCreator(_ceresCreator);
     }
 
-    function setReward(address _reward) external override onlyOwner {
-        getReward = _reward;
+    function setCeresReward(address _ceresReward) external override onlyOwnerOrGovernance {
+        ceresReward = _ceresReward;
     }
 
-    function setTokenType(address _token, uint256 _tokenType) external override onlyOwner tokenAdded(_token) {
+    function setCeresMiner(address _ceresMiner) external override onlyOwnerOrGovernance {
+        ceresMiner = _ceresMiner;
+    }
+
+    function setTokenType(address _token, uint256 _tokenType) external override onlyOwnerOrGovernance tokenAdded(_token) {
         _beforeTypeChange(_token, _tokenType);
         tokenInfo[_token].tokenType = _tokenType;
     }
 
-    function setStaking(address _token, address _staking) external override onlyOwner tokenAdded(_token) {
-        isValidStaking[tokenInfo[_token].stakingAddress] = false;
-        isValidStaking[_staking] = true;
-        tokenInfo[_token].stakingAddress = _staking;
+    function setStaking(address _token, address _staking) external override onlyOwnerOrGovernance tokenAdded(_token) {
+        isStaking[tokenInfo[_token].staking] = false;
+        isStaking[_staking] = true;
+        tokenInfo[_token].staking = _staking;
     }
 
-    function setOracle(address _token, address _oracle) external override onlyOwner tokenAdded(_token) {
-        tokenInfo[_token].oracleAddress = _oracle;
+    function setChainlinkPriceFeed(address _token, address _chainlinkFeed) external onlyOwnerOrGovernance tokenAdded(_token) {
+        tokenInfo[_token].priceFeed = _chainlinkFeed;
+        tokenInfo[_token].isChainlinkFeed = true;
     }
 
-    function setIsStakingRewards(address _token, bool _isStakingRewards) external override onlyOwner tokenAdded(_token) {
+    function setOraclePriceFeed(address _token, address _quoteToken) external onlyOwnerOrGovernance tokenAdded(_token) {
+        require(tokenInfo[_quoteToken].priceFeed != address(0), "CeresCreator: QuoteToken has no price feed!");
+        require(tokenInfo[_quoteToken].isChainlinkFeed, "CeresCreator: QuoteToken should be chainlink feed!");
+
+        tokenInfo[_token].priceFeed = ceresCreator.createOracle(_token, _quoteToken);
+        tokenInfo[_token].isChainlinkFeed = false;
+    }
+
+    function setIsStakingRewards(address _token, bool _isStakingRewards) external override onlyOwnerOrGovernance tokenAdded(_token) {
         tokenInfo[_token].isStakingRewards = _isStakingRewards;
     }
 
-    function setIsStakingMineable(address _token, bool _isStakingMineable) external override onlyOwner tokenAdded(_token) {
+    function setIsStakingMineable(address _token, bool _isStakingMineable) external override onlyOwnerOrGovernance tokenAdded(_token) {
         tokenInfo[_token].isStakingMineable = _isStakingMineable;
     }
-    
-    // records vol address before type change every time
+
+    function setGovernorTimelock(address _governorTimelock) external onlyOwnerOrGovernance {
+        governorTimelock = _governorTimelock;
+    }
+
+    /* internals */
     function _beforeTypeChange(address _token, uint256 _tokenType) internal {
 
         uint256 oldType = tokenInfo[_token].tokenType;
