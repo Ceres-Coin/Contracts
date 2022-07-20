@@ -1,9 +1,290 @@
-// Sources flattened with hardhat v2.6.3 https://hardhat.org
+// Sources flattened with hardhat v2.7.0 https://hardhat.org
 
-// File @openzeppelin/contracts/security/ReentrancyGuard.sol@v4.4.0
+// File @openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.0 (security/ReentrancyGuard.sol)
+// OpenZeppelin Contracts (last updated v4.5.0) (utils/Address.sol)
+
+pragma solidity ^0.8.1;
+
+/**
+ * @dev Collection of functions related to the address type
+ */
+library AddressUpgradeable {
+    /**
+     * @dev Returns true if `account` is a contract.
+     *
+     * [IMPORTANT]
+     * ====
+     * It is unsafe to assume that an address for which this function returns
+     * false is an externally-owned account (EOA) and not a contract.
+     *
+     * Among others, `isContract` will return false for the following
+     * types of addresses:
+     *
+     *  - an externally-owned account
+     *  - a contract in construction
+     *  - an address where a contract will be created
+     *  - an address where a contract lived, but was destroyed
+     * ====
+     *
+     * [IMPORTANT]
+     * ====
+     * You shouldn't rely on `isContract` to protect against flash loan attacks!
+     *
+     * Preventing calls from contracts is highly discouraged. It breaks composability, breaks support for smart wallets
+     * like Gnosis Safe, and does not provide security since it can be circumvented by calling from a contract
+     * constructor.
+     * ====
+     */
+    function isContract(address account) internal view returns (bool) {
+        // This method relies on extcodesize/address.code.length, which returns 0
+        // for contracts in construction, since the code is only stored at the end
+        // of the constructor execution.
+
+        return account.code.length > 0;
+    }
+
+    /**
+     * @dev Replacement for Solidity's `transfer`: sends `amount` wei to
+     * `recipient`, forwarding all available gas and reverting on errors.
+     *
+     * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost
+     * of certain opcodes, possibly making contracts go over the 2300 gas limit
+     * imposed by `transfer`, making them unable to receive funds via
+     * `transfer`. {sendValue} removes this limitation.
+     *
+     * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].
+     *
+     * IMPORTANT: because control is transferred to `recipient`, care must be
+     * taken to not create reentrancy vulnerabilities. Consider using
+     * {ReentrancyGuard} or the
+     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
+     */
+    function sendValue(address payable recipient, uint256 amount) internal {
+        require(address(this).balance >= amount, "Address: insufficient balance");
+
+        (bool success, ) = recipient.call{value: amount}("");
+        require(success, "Address: unable to send value, recipient may have reverted");
+    }
+
+    /**
+     * @dev Performs a Solidity function call using a low level `call`. A
+     * plain `call` is an unsafe replacement for a function call: use this
+     * function instead.
+     *
+     * If `target` reverts with a revert reason, it is bubbled up by this
+     * function (like regular Solidity function calls).
+     *
+     * Returns the raw returned data. To convert to the expected return value,
+     * use https://solidity.readthedocs.io/en/latest/units-and-global-variables.html?highlight=abi.decode#abi-encoding-and-decoding-functions[`abi.decode`].
+     *
+     * Requirements:
+     *
+     * - `target` must be a contract.
+     * - calling `target` with `data` must not revert.
+     *
+     * _Available since v3.1._
+     */
+    function functionCall(address target, bytes memory data) internal returns (bytes memory) {
+        return functionCall(target, data, "Address: low-level call failed");
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`], but with
+     * `errorMessage` as a fallback revert reason when `target` reverts.
+     *
+     * _Available since v3.1._
+     */
+    function functionCall(
+        address target,
+        bytes memory data,
+        string memory errorMessage
+    ) internal returns (bytes memory) {
+        return functionCallWithValue(target, data, 0, errorMessage);
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
+     * but also transferring `value` wei to `target`.
+     *
+     * Requirements:
+     *
+     * - the calling contract must have an ETH balance of at least `value`.
+     * - the called Solidity function must be `payable`.
+     *
+     * _Available since v3.1._
+     */
+    function functionCallWithValue(
+        address target,
+        bytes memory data,
+        uint256 value
+    ) internal returns (bytes memory) {
+        return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCallWithValue-address-bytes-uint256-}[`functionCallWithValue`], but
+     * with `errorMessage` as a fallback revert reason when `target` reverts.
+     *
+     * _Available since v3.1._
+     */
+    function functionCallWithValue(
+        address target,
+        bytes memory data,
+        uint256 value,
+        string memory errorMessage
+    ) internal returns (bytes memory) {
+        require(address(this).balance >= value, "Address: insufficient balance for call");
+        require(isContract(target), "Address: call to non-contract");
+
+        (bool success, bytes memory returndata) = target.call{value: value}(data);
+        return verifyCallResult(success, returndata, errorMessage);
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
+     * but performing a static call.
+     *
+     * _Available since v3.3._
+     */
+    function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {
+        return functionStaticCall(target, data, "Address: low-level static call failed");
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],
+     * but performing a static call.
+     *
+     * _Available since v3.3._
+     */
+    function functionStaticCall(
+        address target,
+        bytes memory data,
+        string memory errorMessage
+    ) internal view returns (bytes memory) {
+        require(isContract(target), "Address: static call to non-contract");
+
+        (bool success, bytes memory returndata) = target.staticcall(data);
+        return verifyCallResult(success, returndata, errorMessage);
+    }
+
+    /**
+     * @dev Tool to verifies that a low level call was successful, and revert if it wasn't, either by bubbling the
+     * revert reason using the provided one.
+     *
+     * _Available since v4.3._
+     */
+    function verifyCallResult(
+        bool success,
+        bytes memory returndata,
+        string memory errorMessage
+    ) internal pure returns (bytes memory) {
+        if (success) {
+            return returndata;
+        } else {
+            // Look for revert reason and bubble it up if present
+            if (returndata.length > 0) {
+                // The easiest way to bubble the revert reason is using memory via assembly
+
+                assembly {
+                    let returndata_size := mload(returndata)
+                    revert(add(32, returndata), returndata_size)
+                }
+            } else {
+                revert(errorMessage);
+            }
+        }
+    }
+}
+
+
+// File @openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v4.5.0) (proxy/utils/Initializable.sol)
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed
+ * behind a proxy. Since proxied contracts do not make use of a constructor, it's common to move constructor logic to an
+ * external initializer function, usually called `initialize`. It then becomes necessary to protect this initializer
+ * function so it can only be called once. The {initializer} modifier provided by this contract will have this effect.
+ *
+ * TIP: To avoid leaving the proxy in an uninitialized state, the initializer function should be called as early as
+ * possible by providing the encoded function call as the `_data` argument to {ERC1967Proxy-constructor}.
+ *
+ * CAUTION: When used with inheritance, manual care must be taken to not invoke a parent initializer twice, or to ensure
+ * that all initializers are idempotent. This is not verified automatically as constructors are by Solidity.
+ *
+ * [CAUTION]
+ * ====
+ * Avoid leaving a contract uninitialized.
+ *
+ * An uninitialized contract can be taken over by an attacker. This applies to both a proxy and its implementation
+ * contract, which may impact the proxy. To initialize the implementation contract, you can either invoke the
+ * initializer manually, or you can include a constructor to automatically mark it as initialized when it is deployed:
+ *
+ * [.hljs-theme-light.nopadding]
+ * ```
+ * /// @custom:oz-upgrades-unsafe-allow constructor
+ * constructor() initializer {}
+ * ```
+ * ====
+ */
+abstract contract Initializable {
+    /**
+     * @dev Indicates that the contract has been initialized.
+     */
+    bool private _initialized;
+
+    /**
+     * @dev Indicates that the contract is in the process of being initialized.
+     */
+    bool private _initializing;
+
+    /**
+     * @dev Modifier to protect an initializer function from being invoked twice.
+     */
+    modifier initializer() {
+        // If the contract is initializing we ignore whether _initialized is set in order to support multiple
+        // inheritance patterns, but we only do this in the context of a constructor, because in other contexts the
+        // contract may have been reentered.
+        require(_initializing ? _isConstructor() : !_initialized, "Initializable: contract is already initialized");
+
+        bool isTopLevelCall = !_initializing;
+        if (isTopLevelCall) {
+            _initializing = true;
+            _initialized = true;
+        }
+
+        _;
+
+        if (isTopLevelCall) {
+            _initializing = false;
+        }
+    }
+
+    /**
+     * @dev Modifier to protect an initialization function so that it can only be invoked by functions with the
+     * {initializer} modifier, directly or indirectly.
+     */
+    modifier onlyInitializing() {
+        require(_initializing, "Initializable: contract is not initializing");
+        _;
+    }
+
+    function _isConstructor() private view returns (bool) {
+        return !AddressUpgradeable.isContract(address(this));
+    }
+}
+
+
+// File @openzeppelin/contracts/security/ReentrancyGuard.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts v4.4.1 (security/ReentrancyGuard.sol)
 
 pragma solidity ^0.8.0;
 
@@ -67,10 +348,10 @@ abstract contract ReentrancyGuard {
 }
 
 
-// File @openzeppelin/contracts/utils/math/Math.sol@v4.4.0
+// File @openzeppelin/contracts/utils/math/Math.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.0 (utils/math/Math.sol)
+// OpenZeppelin Contracts (last updated v4.5.0) (utils/math/Math.sol)
 
 pragma solidity ^0.8.0;
 
@@ -114,10 +395,10 @@ library Math {
 }
 
 
-// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.4.0
+// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.0 (token/ERC20/IERC20.sol)
+// OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/IERC20.sol)
 
 pragma solidity ^0.8.0;
 
@@ -136,13 +417,13 @@ interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
 
     /**
-     * @dev Moves `amount` tokens from the caller's account to `recipient`.
+     * @dev Moves `amount` tokens from the caller's account to `to`.
      *
      * Returns a boolean value indicating whether the operation succeeded.
      *
      * Emits a {Transfer} event.
      */
-    function transfer(address recipient, uint256 amount) external returns (bool);
+    function transfer(address to, uint256 amount) external returns (bool);
 
     /**
      * @dev Returns the remaining number of tokens that `spender` will be
@@ -170,7 +451,7 @@ interface IERC20 {
     function approve(address spender, uint256 amount) external returns (bool);
 
     /**
-     * @dev Moves `amount` tokens from `sender` to `recipient` using the
+     * @dev Moves `amount` tokens from `from` to `to` using the
      * allowance mechanism. `amount` is then deducted from the caller's
      * allowance.
      *
@@ -179,8 +460,8 @@ interface IERC20 {
      * Emits a {Transfer} event.
      */
     function transferFrom(
-        address sender,
-        address recipient,
+        address from,
+        address to,
         uint256 amount
     ) external returns (bool);
 
@@ -200,10 +481,10 @@ interface IERC20 {
 }
 
 
-// File @openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol@v4.4.0
+// File @openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.0 (token/ERC20/extensions/IERC20Metadata.sol)
+// OpenZeppelin Contracts v4.4.1 (token/ERC20/extensions/IERC20Metadata.sol)
 
 pragma solidity ^0.8.0;
 
@@ -230,12 +511,12 @@ interface IERC20Metadata is IERC20 {
 }
 
 
-// File @openzeppelin/contracts/utils/Address.sol@v4.4.0
+// File @openzeppelin/contracts/utils/Address.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.0 (utils/Address.sol)
+// OpenZeppelin Contracts (last updated v4.5.0) (utils/Address.sol)
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 /**
  * @dev Collection of functions related to the address type
@@ -257,17 +538,22 @@ library Address {
      *  - an address where a contract will be created
      *  - an address where a contract lived, but was destroyed
      * ====
+     *
+     * [IMPORTANT]
+     * ====
+     * You shouldn't rely on `isContract` to protect against flash loan attacks!
+     *
+     * Preventing calls from contracts is highly discouraged. It breaks composability, breaks support for smart wallets
+     * like Gnosis Safe, and does not provide security since it can be circumvented by calling from a contract
+     * constructor.
+     * ====
      */
     function isContract(address account) internal view returns (bool) {
-        // This method relies on extcodesize, which returns 0 for contracts in
-        // construction, since the code is only stored at the end of the
-        // constructor execution.
+        // This method relies on extcodesize/address.code.length, which returns 0
+        // for contracts in construction, since the code is only stored at the end
+        // of the constructor execution.
 
-        uint256 size;
-        assembly {
-            size := extcodesize(account)
-        }
-        return size > 0;
+        return account.code.length > 0;
     }
 
     /**
@@ -451,10 +737,10 @@ library Address {
 }
 
 
-// File @openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol@v4.4.0
+// File @openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.0 (token/ERC20/utils/SafeERC20.sol)
+// OpenZeppelin Contracts v4.4.1 (token/ERC20/utils/SafeERC20.sol)
 
 pragma solidity ^0.8.0;
 
@@ -552,17 +838,12 @@ library SafeERC20 {
 }
 
 
-// File contracts/interface/ICeresStaking.sol
+// File contracts/interfaces/ICeresStaking.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 interface ICeresStaking {
-
-    struct UserLock {
-        uint256 shareAmount;
-        uint256 timeEnd;
-    }
 
     /* ---------- Views ---------- */
     function token() external view returns (address);
@@ -570,54 +851,47 @@ interface ICeresStaking {
     function stakingBalanceOf(address account) external view returns (uint256);
     function totalShare() external view returns (uint256);
     function shareBalanceOf(address account) external view returns (uint256);
-    function unlockedShareBalanceOf(address account) external view returns (uint256);
-    function unlockedStakingBalanceOf(address account) external view returns (uint256);
-    function lockTime() external view returns (uint256);
+    function accountStakingRatio(address account) external view returns (uint256);
     function earned(address account) external view returns (uint256);
     function rewardRate() external view returns (uint256);
     function rewardsDuration() external view returns (uint256);
     function periodFinish() external view returns (uint256);
     function yieldAPR() external view returns (uint256);
     function value() external view returns (uint256);
-    function lastRewardApplicant() external view returns (address);
-    function lastAppliedTimestamp() external view returns (uint256);
 
     /* ---------- Functions ---------- */
     function stake(uint256 amount) external;
     function withdraw(uint256 shareAmount) external;
-    function claimRewardWithPercent(uint256) external;
     function reinvestReward() external;
     function applyReward() external;
     function notifyReward(uint256 amount, uint256 duration) external;
     function approveBank(uint256 amount) external;
-    
 }
 
 
-// File contracts/interface/IOracle.sol
+// File contracts/interfaces/IOracle.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 interface IOracle {
-
     /* ---------- Views ---------- */
     function token() external view returns (address);
     function getPrice() external view returns (uint256);
     function updatable() external view returns (bool);
+    function period() external view returns (uint256);
 
     /* ---------- Functions ---------- */
     function update() external;
 }
 
 
-// File contracts/interface/ICeresReward.sol
+// File contracts/interfaces/ICeresReward.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 interface ICeresReward {
-    
     struct StakingRewardConfig {
         uint256 amount;
         uint256 duration;
@@ -631,37 +905,35 @@ interface ICeresReward {
     function minApplicantStakingRatio() external view returns (uint256);
 
     /* ---------- Functions ---------- */
-    function applyReward() external returns (uint256);
+    function applyReward(address account) external;
 
 }
 
 
-// File contracts/interface/IStakerBook.sol
+// File contracts/interfaces/IStakerBook.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 interface IStakerBook {
-
     /* ---------- Functions ---------- */
     function stake(address staker) external;
     function refer(address staker, address referer) external;
 }
 
 
-// File contracts/interface/IReinvestReceiver.sol
+// File contracts/interfaces/IStakingReceiver.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-interface IReinvestReceiver {
-
+interface IStakingReceiver {
     /* ---------- Notifies ---------- */
-    function notifyReinvest(address account, uint256 amount) external;
+    function notifyStaking(address account, uint256 amount) external;
 }
 
 
-// File contracts/interface/ICeresFactory.sol
+// File contracts/interfaces/ICeresFactory.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
@@ -669,50 +941,52 @@ pragma solidity ^0.8.4;
 interface ICeresFactory {
     
     struct TokenInfo {
-        address tokenAddress;
-        uint256 tokenType; // 1: asc, 2: crs, 3: col, 4: vol;
-        address stakingAddress;
-        address oracleAddress;
+        address token;
+        address staking;
+        address priceFeed;
+        bool isChainlinkFeed;
+        bool isVolatile;
         bool isStakingRewards;
         bool isStakingMineable;
     }
 
     /* ---------- Views ---------- */
-    function getBank() external view returns (address);
-    function getReward() external view returns (address);
+    function ceresBank() external view returns (address);
+    function ceresReward() external view returns (address);
+    function ceresMiner() external view returns (address);
     function getTokenInfo(address token) external returns(TokenInfo memory);
     function getStaking(address token) external view returns (address);
-    function getOracle(address token) external view returns (address);
-    function isValidStaking(address sender) external view returns (bool);
-    function volTokens(uint256 index) external view returns (address);
+    function getPriceFeed(address token) external view returns (address);
+    function isStaking(address sender) external view returns (bool);
+    function tokens(uint256 index) external view returns (address);
+    function owner() external view returns (address);
+    function governorTimelock() external view returns (address);
 
     function getTokens() external view returns (address[] memory);
     function getTokensLength() external view returns (uint256);
-    function getVolTokensLength() external view returns (uint256);
-    function getValidStakings() external view returns (address[] memory);
     function getTokenPrice(address token) external view returns(uint256);
+    function isChainlinkFeed(address token) external view returns (bool);
+    function isVolatile(address token) external view returns (bool);
     function isStakingRewards(address staking) external view returns (bool);
     function isStakingMineable(address staking) external view returns (bool);
-
-    /* ---------- Functions ---------- */
-    function setBank(address newAddress) external;
-    function setReward(address newReward) external;
-    function setCreator(address creator) external;
-    function setTokenType(address token, uint256 tokenType) external;
+    function oraclePeriod() external view returns (uint256);
+    
+    /* ---------- Public Functions ---------- */
+    function updateOracles(address[] memory _tokens) external;
+    function updateOracle(address token) external;
+    function addStaking(address token, address staking, address oracle, bool _isStakingRewards, bool _isStakingMineable) external;
+    function removeStaking(address token, address staking) external;
+    /* ---------- Setting Functions ---------- */
+    function setCeresBank(address _ceresBank) external;
+    function setCeresReward(address _ceresReward) external;
+    function setCeresMiner(address _ceresMiner) external;
+    function setCeresCreator(address _ceresCreator) external;
     function setStaking(address token, address staking) external;
-    function setOracle(address token, address oracle) external;
     function setIsStakingRewards(address token, bool _isStakingRewards) external;
     function setIsStakingMineable(address token, bool _isStakingMineable) external;
-    function updateOracles(address[] memory tokens) external;
-    function updateOracle(address token) external;
-    function addStaking(address token, uint256 tokenType, address staking, address oracle, bool _isStakingRewards, bool _isStakingMineable) external;
-    function removeStaking(address token, address staking) external;
-
     /* ---------- RRA ---------- */
-    function createStaking(address token, bool ifCreateOracle) external returns (address staking, address oracle);
-    function createStakingWithLiquidity(address token, uint256 tokenAmount, uint256 quoteAmount, bool ifCreateOracle) external returns (address staking, address oracle);
-    function createOracle(address token) external returns (address);
-
+    function createStaking(address token, address chainlinkFeed, address quoteToken) external returns (address staking);
+    function createOracle(address token, address quoteToken) external returns (address);
 }
 
 
@@ -725,20 +999,36 @@ contract CeresBase {
 
     uint256 public constant CERES_PRECISION = 1e6;
     uint256 public constant SHARE_PRECISION = 1e18;
-    
+
     ICeresFactory public factory;
-    
-    modifier onlyBank() {
-        require(msg.sender == factory.getBank(), "Only Bank!");
-        _;
-    }
-    
-    modifier onlyStakings() {
-        require(factory.isValidStaking(msg.sender) == true, "Only Staking!");
+
+    modifier onlyCeresBank() {
+        require(msg.sender == factory.ceresBank(), "Only CeresBank!");
         _;
     }
 
-    constructor(address _factory){
+    modifier onlyCeresStaking() {
+        require(factory.isStaking(msg.sender) == true, "Only CeresStaking!");
+        _;
+    }
+
+    modifier onlyCeresMiner() {
+        require(msg.sender == factory.ceresMiner(), "Only CeresMiner!");
+        _;
+    }
+
+    modifier onlyCeresReward() {
+        require(msg.sender == factory.ceresReward(), "Only CeresReward!");
+        _;
+    }
+
+    modifier onlyOwnerOrGovernor() {
+        require(msg.sender == factory.owner() || msg.sender == factory.governorTimelock(),
+            "Only owner or governor timelock!");
+        _;
+    }
+
+    constructor(address _factory) {
         factory = ICeresFactory(_factory);
     }
 }
@@ -772,148 +1062,110 @@ abstract contract CeresStakingRewards is CeresBase, ICeresStaking, ReentrancyGua
     uint256 internal _totalStaking;
     uint256 internal _totalShare;
 
-    address public override lastRewardApplicant;
-    uint256 public override lastAppliedTimestamp;
-
     mapping(address => uint256) internal _shareBalances;
-    mapping(address => uint256) public userRewardPerSharePaid;
+    mapping(address => uint256) public accountRewardPerSharePaid;
     mapping(address => uint256) public rewards;
-    mapping(address => UserLock) public userLocks;
+    mapping(address => uint256) public accountLockTime;
 
+    // FIXME k: only in testnet
     IStakerBook public stakerBook;
 
     /* ---------- Events ---------- */
     event RewardAdded(uint256 amount);
-    event Staked(address indexed user, uint256 amount);
-    event Withdrawn(address indexed user, uint256 amount);
-    event RewardPaid(address indexed user, uint256 percent);
+    event Staked(address indexed account, uint256 amount);
+    event Withdrawn(address indexed account, uint256 amount);
+    event RewardPaid(address indexed account, uint256 percent);
     event RewardsDurationUpdated(uint256 newDuration);
-
     modifier updateReward(address account) {
         rewardPerShareStored = rewardPerShare();
         lastUpdateTime = lastTimeRewardApplicable();
         if (account != address(0)) {
             rewards[account] = earned(account);
-            userRewardPerSharePaid[account] = rewardPerShareStored;
+            accountRewardPerSharePaid[account] = rewardPerShareStored;
         }
         _;
     }
 
     /* ---------- Views ---------- */
     function token() public view override virtual returns (address);
-
     function totalStaking() public view override returns (uint256) {
         return _totalStaking;
     }
-
     function stakingBalanceOf(address account) public view override returns (uint256) {
         if (_totalShare > 0)
             return shareBalanceOf(account) * _totalStaking / _totalShare;
         else
             return 0;
     }
-
     function totalShare() public view override returns (uint256) {
         return _totalShare;
     }
-
     function shareBalanceOf(address account) public view override returns (uint256) {
         return _shareBalances[account];
     }
-
-    function unlockedShareBalanceOf(address account) public view override returns (uint256) {
-
-        if (userLocks[account].timeEnd > block.timestamp)
-            return _shareBalances[account] - userLocks[account].shareAmount;
-        else
-            return _shareBalances[account];
+    function accountStakingRatio(address account) public view override returns (uint256){
+        return _shareBalances[account] * CERES_PRECISION / _totalShare;
     }
-
-    function unlockedStakingBalanceOf(address account) public view override returns (uint256) {
-        uint256 unlockedShare = unlockedShareBalanceOf(account);
-        if (unlockedShare > 0)
-            return unlockedShare * _totalStaking / _totalShare;
-        else
-            return 0;
-    }
-
-    function lockTime() public view override returns (uint256) {
-        return ICeresReward(factory.getReward()).stakingLockTime();
-    }
-
     function lastTimeRewardApplicable() public view returns (uint256) {
         return Math.min(block.timestamp, periodFinish);
     }
-
     function rewardPerShare() public view returns (uint256) {
         if (_totalShare == 0) {
             return rewardPerShareStored;
         }
         return rewardPerShareStored + ((lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * SHARE_PRECISION / _totalShare);
     }
-
     function earned(address account) public view override returns (uint256) {
-        return _shareBalances[account] * (rewardPerShare() - userRewardPerSharePaid[account]) / SHARE_PRECISION + rewards[account];
+        return _shareBalances[account] * (rewardPerShare() - accountRewardPerSharePaid[account]) / SHARE_PRECISION + rewards[account];
     }
-
     function getRewardForDuration() external view returns (uint256) {
         return rewardRate * rewardsDuration;
     }
-
+    // TODO K: off chain
     function yieldAPR() public view override returns (uint256){
 
         if (_totalStaking == 0 || rewardRate == 0)
             return 999999999;
-        
+
         uint256 missingDecimals = uint256(18 - IERC20Metadata(token()).decimals());
-        uint256 apr = rewardRate * 365 days * IOracle(factory.getOracle(address(crs))).getPrice() * CERES_PRECISION
-        / _totalStaking / IOracle(factory.getOracle(token())).getPrice();
+        uint256 apr = rewardRate * 365 days * factory.getTokenPrice(address(crs)) * CERES_PRECISION
+        / _totalStaking / factory.getTokenPrice(token());
 
         return missingDecimals > 0 ? apr / 10 ** missingDecimals : apr;
     }
-
     function value() external view override returns (uint256){
         return _totalStaking * factory.getTokenPrice(token()) / 10 ** IERC20Metadata(token()).decimals();
     }
 
-    /* ---------- Functions ---------- */
+    function stake(uint256 amount) public override virtual;
+
+    function stakeWithReferral(uint256 amount, address referrer) external {
+        require(msg.sender != referrer, "CeresStaking: Referrer can't be yourself!");
+        stakerBook.refer(msg.sender, referrer);
+        stake(amount);
+    }
+
+    /* ---------- Internal Functions ---------- */
     function _stake(address account, uint256 amount) internal {
         // stake increase
         _totalStaking += amount;
 
-        // update lock
-        uint256 userShare = amount * SHARE_PRECISION / shareUnusedRatio;
-        _updateLock(account, userShare);
-
         // share increase
-        _totalShare += userShare;
-        _shareBalances[account] += userShare;
+        uint256 accountShare = amount * SHARE_PRECISION / shareUnusedRatio;
+        _totalShare += accountShare;
+        _shareBalances[account] += accountShare;
+
+        // update lock
+        accountLockTime[account] = block.timestamp + ICeresReward(factory.ceresReward()).stakingLockTime();
 
         stakerBook.stake(msg.sender);
         emit Staked(account, amount);
+
+        _afterStake(account, accountShare);
     }
+    function _afterStake(address account, uint256 shareAmount) internal virtual {}
 
-    function stake(uint256 amount) public override virtual;
-
-    function stakeWithReferral(uint256 amount, address referer) external {
-        require(msg.sender != referer, "Referer can't be yourself!");
-        stakerBook.refer(msg.sender, referer);
-        stake(amount);
-    }
-
-    function _updateLock(address account, uint256 shareAmount) internal {
-
-        UserLock memory _userLock = userLocks[account];
-        if (_userLock.timeEnd > 0 && _userLock.timeEnd <= block.timestamp)
-            userLocks[account].shareAmount = shareAmount;
-        else
-            userLocks[account].shareAmount += shareAmount;
-
-        userLocks[account].timeEnd = block.timestamp + lockTime();
-
-        emit Staked(account, shareAmount);
-    }
-
+    /* ---------- Public Functions ---------- */
     function reinvestReward() public virtual override nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
@@ -921,35 +1173,15 @@ abstract contract CeresStakingRewards is CeresBase, ICeresStaking, ReentrancyGua
             address stakingCRS = factory.getStaking(address(crs));
             if (stakingCRS != address(this))
                 SafeERC20.safeTransfer(crs, stakingCRS, reward);
-            IReinvestReceiver(stakingCRS).notifyReinvest(msg.sender, reward);
+            IStakingReceiver(stakingCRS).notifyStaking(msg.sender, reward);
         }
     }
-
-    function claimRewardWithPercent(uint256 percent) public override virtual nonReentrant updateReward(msg.sender) {
-        require(percent > 0 && percent <= 100, "percent wrong");
-        uint256 reward = rewards[msg.sender] * percent / 100;
-        if (reward > 0) {
-            rewards[msg.sender] -= reward;
-            SafeERC20.safeTransfer(crs, msg.sender, reward);
-            emit RewardPaid(msg.sender, percent);
-        }
-    }
-
-    function updateOracles() public {
-        address[] memory _tokens = new address[](3);
-        _tokens[0] = address(asc);
-        _tokens[1] = address(crs);
-        _tokens[2] = token();
-
-        factory.updateOracles(_tokens);
-    }
-
     function notifyReward(uint256 amount, uint256 duration) external override virtual updateReward(address(0)) {
-        require(block.timestamp >= periodFinish, "Period is not finish yet.");
+        require(block.timestamp >= periodFinish, "CeresStaking: Period is not finish yet.");
 
         rewardRate = amount / duration;
 
-        require(rewardRate <= crs.balanceOf(address(this)) / duration, "Provided amount too high");
+        require(rewardRate <= crs.balanceOf(address(this)) / duration, "CeresStaking: Provided amount too high");
 
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp + duration;
@@ -957,96 +1189,77 @@ abstract contract CeresStakingRewards is CeresBase, ICeresStaking, ReentrancyGua
         rewardsDuration = duration;
         emit RewardAdded(amount);
     }
-
     function applyReward() external override {
-        require(block.timestamp >= periodFinish, "Period is not finish yet.");
+        require(block.timestamp >= periodFinish, "CeresStaking: Period is not finish yet.");
 
-        ICeresReward _reward = ICeresReward(factory.getReward());
-        require(_totalShare > 0, "Can not apply reward with no staking!");
-        require(shareBalanceOf(msg.sender) * CERES_PRECISION / _totalShare > _reward.minApplicantStakingRatio(), "Applicant staking ratio is not enough!");
+        ICeresReward ceresReward = ICeresReward(factory.ceresReward());
+        require(_totalShare > 0, "CeresStaking: Can not apply reward with no staking!");
+        require(accountStakingRatio(msg.sender) > ceresReward.minApplicantStakingRatio(), "CeresStaking: Applicant staking ratio is not enough!");
 
-        uint256 _bonus = _reward.applyReward();
-        if (_bonus > 0)
-            crs.transfer(msg.sender, _bonus);
-
-        lastRewardApplicant = msg.sender;
-        lastAppliedTimestamp = block.timestamp;
+        ceresReward.applyReward(msg.sender);
     }
-
-    function approveBank(uint256 amount) external override {
-        require(msg.sender == factory.getBank(), "Only CeresBank!");
-        IERC20(token()).approve(factory.getBank(), amount);
+    function approveBank(uint256 amount) external onlyCeresBank override {
+        IERC20(token()).approve(factory.ceresBank(), amount);
     }
 }
 
 
-// File contracts/interface/IMiner.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
-interface IMiner {
-
-    /* ---------- Views ---------- */
-    function nextUpdateTime() external view returns (uint256);
-    function lastMiner() external view returns (address);
-    function lastMintedTimestamp() external view returns (uint256);
-
-    /* ---------- Functions ---------- */
-    function mint(uint256 amountIn) external;
-}
-
-
-// File contracts/interface/ICeresBank.sol
+// File contracts/interfaces/ICeresBank.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 interface ICeresBank {
-
+    
     struct MintResult {
-        uint256 lockedCol;
-        uint256 burnedCRS;
-        uint256 lockedVol;
-        uint256 mintToCol;
-        uint256 mintToCRS;
-        uint256 mintToVol;
-        uint256 bonusToMiner;
-        address volStaking;
+        uint256 ascTotal;
+        uint256 ascToGovernor;
+        uint256 ascToCol;
+        uint256 ascToCrs;
+        uint256 ascToVol;
+        uint256 colAmount;
+        uint256 crsAmount;
+        uint256 volAmount;
+        uint256 bonusAmount;
+        address vol;
     }
 
-    /* ---------- Views ---------- */
-    function collateralRatio() external view returns (uint256);
-    function minCR() external view returns(uint256);
-    function nextUpdateTime(address staking) external view returns (uint256);
-    function updateCooldown() external view returns (uint256);
-    function ratioStep() external view returns (uint256);
-    function minMinerStakingRatio() external view returns (uint256);
-    function minMintedASCAmount() external view returns (uint256);
+    /* views */
+    function minMinerStakingRatio() external view returns(uint256);
 
-    /* ---------- Functions ---------- */
-    function mintFromStaking(address collateral, uint collateralAmount) external returns (MintResult memory result);
-    function redeem(uint ascAmount) external;
-    function claimColFromStaking(uint256 colValueD18, address token) external returns (uint256);
+    /* functions */
+    function mint(address collateral, uint256 amount) external returns (MintResult memory result);
+    function redeem(uint256 ascAmount) external;
+    function claimColFromStaking(uint256 colValueD18, address token) external returns(uint256);
+    function mintBonusTo(address recipient, uint256 amount) external;
+    
 }
 
 
-// File contracts/interface/IMintReceiver.sol
+// File contracts/interfaces/IMintReceiver.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 interface IMintReceiver {
-
     /* ---------- Views ---------- */
     function mintEarned(address account) external view returns (uint256);
-    function lastMintAmount() external view returns (uint256);
-    function lastMintRatio() external view returns (uint256);
 
     /* ---------- Functions ---------- */
-    function notifyMint(uint256 amountMint, uint256 amountBurn) external;
-    function claimMintWithPercent(uint256 percent) external;
+    function notifyMint(uint256 amountAsc, uint256 amountUsed) external;
     function reinvestMint() external;
+}
+
+
+// File contracts/interfaces/ICeresMiner.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+interface ICeresMiner {
+
+    function mint(address token, address account) external;
+
 }
 
 
@@ -1057,18 +1270,27 @@ pragma solidity ^0.8.0;
 
 library CeresLibrary {
 
-    function toAmountD18(address _token, uint256 _amount) internal view returns (uint256) {
-        return _amount * 10 ** (18 - IERC20Metadata(_token).decimals());
+    function toAmountD18(address token, uint256 amount) internal view returns (uint256) {
+        return amount * 10 ** (18 - IERC20Metadata(token).decimals());
     }
 
-    function toAmountActual(address _token, uint256 _amountD18) internal view returns (uint256) {
-        return _amountD18 / 10 ** (18 - IERC20Metadata(_token).decimals());
+    function toAmountActual(address token, uint256 amountD18) internal view returns (uint256) {
+        return amountD18 / 10 ** (18 - IERC20Metadata(token).decimals());
+    }
+    
+    function determineColAmount(address collateral, uint256 totalStaking, uint256 percentMin, uint256 percentMax) 
+        internal view returns (uint256){
+        
+        require(percentMin < percentMax, "CeresLibrary: Require percent min smaller than percent max");
+        uint256 distance = percentMax - percentMin;
+        uint256 r = uint256(keccak256(abi.encodePacked(collateral, block.difficulty, block.timestamp, distance))) % distance;
+        return totalStaking * (percentMin + r) / 1e6;
     }
     
 }
 
 
-// File contracts/staking/CeresStaking.sol
+// File contracts/staking/CeresStakingCOL.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
@@ -1078,52 +1300,36 @@ pragma solidity ^0.8.4;
 
 
 
-contract CeresStaking is CeresStakingRewards, IMiner, IMintReceiver {
 
+contract CeresStakingCOL is CeresStakingRewards, IMintReceiver, Initializable {
     IERC20 internal _token;
     uint256 public mintPerShareStored;
-    mapping(address => uint256) public userMintPerSharePaid;
+    mapping(address => uint256) public accountMintPerSharePaid;
     mapping(address => uint256) public mints;
-    address public override lastMiner;
-    uint256 public override lastMintedTimestamp;
-    uint256 public override lastMintAmount;
-    uint256 public override lastMintRatio;
 
     /* ---------- Events ---------- */
     event MintPaid(address indexed account, uint256 amount);
 
     modifier updateMint(address account){
         mints[account] = mintEarned(account);
-        userMintPerSharePaid[account] = mintPerShareStored;
+        accountMintPerSharePaid[account] = mintPerShareStored;
         _;
     }
-    
-    constructor(address _factory, address _asc, address _crs, address _stakingToken, address _stakerBook) CeresBase(_factory){
+
+    constructor(address _factory) CeresBase(_factory) {}
+    function initialize(address _asc, address _crs, address _stakingToken, address _stakerBook) external initializer {
         asc = IERC20(_asc);
         crs = IERC20(_crs);
         _token = IERC20(_stakingToken);
         stakerBook = IStakerBook(_stakerBook);
     }
-    
+
     /* ---------- Views ---------- */
     function token() public view override returns (address){
         return address(_token);
     }
-
     function mintEarned(address account) public view override returns (uint256) {
-        return _shareBalances[account] * (mintPerShareStored - userMintPerSharePaid[account]) / SHARE_PRECISION + mints[account];
-    }
-
-    function nextUpdateTime() external view override returns (uint256){
-        return ICeresBank(factory.getBank()).nextUpdateTime(address(this));
-    }
-    
-    // temporary
-    function estimateMintAmount() external view returns (uint256){
-        address bank = factory.getBank();
-        address tokenAddress = token();
-        uint256 estimateColAmount = CeresLibrary.toAmountActual(tokenAddress, ICeresBank(bank).minMintedASCAmount());
-        return estimateColAmount * CERES_PRECISION / factory.getTokenPrice(tokenAddress) + 10 ** IERC20Metadata(tokenAddress).decimals();
+        return _shareBalances[account] * (mintPerShareStored - accountMintPerSharePaid[account]) / SHARE_PRECISION + mints[account];
     }
 
     /* ---------- Functions ---------- */
@@ -1133,9 +1339,9 @@ contract CeresStaking is CeresStakingRewards, IMiner, IMintReceiver {
         SafeERC20.safeTransferFrom(_token, msg.sender, address(this), amount);
         _stake(msg.sender, amount);
     }
-
     function withdraw(uint256 shareAmount) public override nonReentrant updateReward(msg.sender) updateMint(msg.sender) {
-        require(shareAmount > 0 && shareAmount <= unlockedShareBalanceOf(msg.sender), "CeresStaking: Your unlocked share balance is not enough!");
+        require(accountLockTime[msg.sender] <= block.timestamp, "CeresStaking: The lock time is not over yet.");
+        require(shareAmount > 0 && shareAmount <= _shareBalances[msg.sender], "CeresStaking: Your share balance is not enough!");
 
         uint256 withdrawAmount = shareAmount * _totalStaking / _totalShare;
         _totalStaking -= withdrawAmount;
@@ -1146,84 +1352,36 @@ contract CeresStaking is CeresStakingRewards, IMiner, IMintReceiver {
         SafeERC20.safeTransfer(_token, msg.sender, withdrawAmount);
         emit Withdrawn(msg.sender, shareAmount);
     }
-
-    function withdrawAll(uint256 shareAmount) external {
-        
-        uint256 unlockedShareBalance = unlockedShareBalanceOf(msg.sender);
-        require(shareAmount <= unlockedShareBalance, "CeresStaking: Unlocked share balance not enough!");
-        
-        uint256 percent = shareAmount * 100 / unlockedShareBalance;
-        withdraw(shareAmount);
-        claimRewardWithPercent(percent);
-        claimMintWithPercent(percent);
-    }
-
-    function claimMintWithPercent(uint256 percent) public override nonReentrant updateMint(msg.sender) {
-        require(percent > 0 && percent <= 100, "CeresStaking: percent wrong");
-        uint256 _mint = mints[msg.sender] * percent / 100;
-        if (_mint > 0) {
-            mints[msg.sender] -= _mint;
-            SafeERC20.safeTransfer(asc, msg.sender, _mint);
-            emit MintPaid(msg.sender, _mint);
-        }
-    }
-
     function reinvestMint() public override nonReentrant updateMint(msg.sender) {
         uint256 _mint = mints[msg.sender];
         if (_mint > 0) {
             mints[msg.sender] = 0;
             address stakingASC = factory.getStaking(address(asc));
             SafeERC20.safeTransfer(asc, stakingASC, _mint);
-            IReinvestReceiver(stakingASC).notifyReinvest(msg.sender, _mint);
+            IStakingReceiver(stakingASC).notifyStaking(msg.sender, _mint);
         }
     }
-
     function reinvestAll() external {
         reinvestReward();
         reinvestMint();
     }
 
     /* ---------- Miner ---------- */
-    function mint(uint256 amountIn) external override {
-        address bank = factory.getBank();
-        require(amountIn <= _totalStaking, "CeresStaking: AmountIn must be less than the staking balance.");
-        require(shareBalanceOf(msg.sender) * CERES_PRECISION / _totalShare > ICeresBank(bank).minMinerStakingRatio(), 
+    function mint() external {
+        address bank = factory.ceresBank();
+        require(accountStakingRatio(msg.sender) > ICeresBank(bank).minMinerStakingRatio(),
             "CeresStaking: Miner staking ratio is not enough!");
-
-        updateOracles();
-
-        SafeERC20.safeTransfer(_token, bank, amountIn);
-        ICeresBank.MintResult memory mintResult = ICeresBank(bank).mintFromStaking(token(), amountIn);
-
-        _notifyMint(mintResult.mintToCol, mintResult.lockedCol);
-
-        // notify staking crs
-        if (mintResult.burnedCRS > 0)
-            IMintReceiver(factory.getStaking(address(crs))).notifyMint(mintResult.mintToCRS, mintResult.burnedCRS);
-
-        // notify staking vol
-        if (mintResult.lockedVol > 0)
-            IMintReceiver(mintResult.volStaking).notifyMint(mintResult.mintToVol, mintResult.lockedVol);
-
-        // bonus to miner
-        if (mintResult.bonusToMiner > 0)
-            SafeERC20.safeTransfer(crs, msg.sender, mintResult.bonusToMiner);
-
-        lastMiner = msg.sender;
-        lastMintedTimestamp = block.timestamp;
+        
+        ICeresMiner(factory.ceresMiner()).mint(token(), msg.sender);
     }
 
     /* ---------- Notifies ---------- */
-    function notifyMint(uint256 amountMint, uint256 amountLocked) public override onlyStakings {
-        _notifyMint(amountMint, amountLocked);
-    }
+    function notifyMint(uint256 amountAsc, uint256 amountUsed) public override onlyCeresMiner {
 
-    function _notifyMint(uint256 amountMint, uint256 amountLocked) internal {
-
-        uint256 leftStaking = _totalStaking - amountLocked;
+        uint256 leftStaking = _totalStaking - amountUsed;
         require(_token.balanceOf(address(this)) >= leftStaking, "CeresStaking: Staking left balance is not enough!");
 
-        if (amountLocked > 0) {
+        if (amountUsed > 0) {
             uint256 leftRatio = leftStaking * SHARE_PRECISION / _totalStaking;
             uint256 newUnusedRatio = shareUnusedRatio * leftRatio / SHARE_PRECISION;
             if (newUnusedRatio > 0)
@@ -1232,15 +1390,8 @@ contract CeresStaking is CeresStakingRewards, IMiner, IMintReceiver {
             _totalStaking = leftStaking;
         }
 
-        if (amountMint > 0)
-            mintPerShareStored += amountMint * SHARE_PRECISION / _totalShare;
+        if (amountAsc > 0)
+            mintPerShareStored += amountAsc * SHARE_PRECISION / _totalShare;
 
-        lastMintAmount = amountMint;
-        updateMintRatio();
-    }
-
-    function updateMintRatio() internal {
-        uint256 ascPrice = factory.getTokenPrice(address(asc));
-        lastMintRatio = ascPrice - CERES_PRECISION;
     }
 }
