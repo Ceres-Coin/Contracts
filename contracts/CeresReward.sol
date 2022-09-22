@@ -1,90 +1,4 @@
-// Sources flattened with hardhat v2.7.0 https://hardhat.org
-
-// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.5.0
-
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/IERC20.sol)
-
-pragma solidity ^0.8.0;
-
-/**
- * @dev Interface of the ERC20 standard as defined in the EIP.
- */
-interface IERC20 {
-    /**
-     * @dev Returns the amount of tokens in existence.
-     */
-    function totalSupply() external view returns (uint256);
-
-    /**
-     * @dev Returns the amount of tokens owned by `account`.
-     */
-    function balanceOf(address account) external view returns (uint256);
-
-    /**
-     * @dev Moves `amount` tokens from the caller's account to `to`.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transfer(address to, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Returns the remaining number of tokens that `spender` will be
-     * allowed to spend on behalf of `owner` through {transferFrom}. This is
-     * zero by default.
-     *
-     * This value changes when {approve} or {transferFrom} are called.
-     */
-    function allowance(address owner, address spender) external view returns (uint256);
-
-    /**
-     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * IMPORTANT: Beware that changing an allowance with this method brings the risk
-     * that someone may use both the old and the new allowance by unfortunate
-     * transaction ordering. One possible solution to mitigate this race
-     * condition is to first reduce the spender's allowance to 0 and set the
-     * desired value afterwards:
-     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-     *
-     * Emits an {Approval} event.
-     */
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Moves `amount` tokens from `from` to `to` using the
-     * allowance mechanism. `amount` is then deducted from the caller's
-     * allowance.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external returns (bool);
-
-    /**
-     * @dev Emitted when `value` tokens are moved from one account (`from`) to
-     * another (`to`).
-     *
-     * Note that `value` may be zero.
-     */
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    /**
-     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-     * a call to {approve}. `value` is the new allowance.
-     */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
+// Sources flattened with hardhat v2.10.2 https://hardhat.org
 
 // File @openzeppelin/contracts-upgradeable/interfaces/draft-IERC1822Upgradeable.sol@v4.5.0
 
@@ -823,104 +737,6 @@ abstract contract UUPSUpgradeable is Initializable, IERC1822ProxiableUpgradeable
 }
 
 
-// File contracts/interfaces/ICeresReward.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
-interface ICeresReward {
-    struct StakingRewardConfig {
-        uint256 amount;
-        uint256 duration;
-    }
-
-    /* ---------- Views ---------- */
-    function getAppliedStakings() external view returns (address[] memory);
-    function getAppliedStakingsLength() external view returns (uint256);
-    function stakingLockTime() external view returns (uint256);
-    function minStakingValue() external view returns (uint256);
-    function minApplicantStakingRatio() external view returns (uint256);
-
-    /* ---------- Functions ---------- */
-    function applyReward(address account) external;
-
-}
-
-
-// File contracts/interfaces/ICeresStaking.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
-interface ICeresStaking {
-
-    /* ---------- Views ---------- */
-    function token() external view returns (address);
-    function totalStaking() external view returns (uint256);
-    function stakingBalanceOf(address account) external view returns (uint256);
-    function totalShare() external view returns (uint256);
-    function shareBalanceOf(address account) external view returns (uint256);
-    function accountStakingRatio(address account) external view returns (uint256);
-    function earned(address account) external view returns (uint256);
-    function rewardRate() external view returns (uint256);
-    function rewardsDuration() external view returns (uint256);
-    function periodFinish() external view returns (uint256);
-    function yieldAPR() external view returns (uint256);
-    function value() external view returns (uint256);
-
-    /* ---------- Functions ---------- */
-    function stake(uint256 amount) external;
-    function withdraw(uint256 shareAmount) external;
-    function reinvestReward() external;
-    function applyReward() external;
-    function notifyReward(uint256 amount, uint256 duration) external;
-    function approveBank(uint256 amount) external;
-}
-
-
-// File contracts/interfaces/ICeresBank.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
-interface ICeresBank {
-    
-    struct MintResult {
-        uint256 ascTotal;
-        uint256 ascToGovernor;
-        uint256 ascToCol;
-        uint256 ascToCrs;
-        uint256 ascToVol;
-        uint256 colAmount;
-        uint256 crsAmount;
-        uint256 volAmount;
-        uint256 bonusAmount;
-        address vol;
-    }
-
-    /* views */
-    function minMinerStakingRatio() external view returns(uint256);
-
-    /* functions */
-    function mint(address collateral, uint256 amount) external returns (MintResult memory result);
-    function redeem(uint256 ascAmount) external;
-    function claimColFromStaking(uint256 colValueD18, address token) external returns(uint256);
-    function mintBonusTo(address recipient, uint256 amount) external;
-    
-}
-
-
-// File contracts/interfaces/IStakingReceiver.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
-interface IStakingReceiver {
-    /* ---------- Notifies ---------- */
-    function notifyStaking(address account, uint256 amount) external;
-}
-
-
 // File contracts/interfaces/ICeresFactory.sol
 
 // SPDX-License-Identifier: MIT
@@ -942,6 +758,7 @@ interface ICeresFactory {
     function ceresBank() external view returns (address);
     function ceresReward() external view returns (address);
     function ceresMiner() external view returns (address);
+    function ceresSwap() external view returns (address);
     function getTokenInfo(address token) external returns(TokenInfo memory);
     function getStaking(address token) external view returns (address);
     function getPriceFeed(address token) external view returns (address);
@@ -964,14 +781,6 @@ interface ICeresFactory {
     function updateOracle(address token) external;
     function addStaking(address token, address staking, address oracle, bool _isStakingRewards, bool _isStakingMineable) external;
     function removeStaking(address token, address staking) external;
-    /* ---------- Setting Functions ---------- */
-    function setCeresBank(address _ceresBank) external;
-    function setCeresReward(address _ceresReward) external;
-    function setCeresMiner(address _ceresMiner) external;
-    function setCeresCreator(address _ceresCreator) external;
-    function setStaking(address token, address staking) external;
-    function setIsStakingRewards(address token, bool _isStakingRewards) external;
-    function setIsStakingMineable(address token, bool _isStakingMineable) external;
     /* ---------- RRA ---------- */
     function createStaking(address token, address chainlinkFeed, address quoteToken) external returns (address staking);
     function createOracle(address token, address quoteToken) external returns (address);
@@ -1012,9 +821,193 @@ contract CeresBaseUpgradeable is Initializable {
         _;
     }
 
-    function __CeresBase_init(address _factory) internal initializer {
+    function __CeresBase_init(address _factory) internal onlyInitializing {
         factory = ICeresFactory(_factory);
     }
+}
+
+
+// File contracts/interfaces/ICeresReward.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+interface ICeresReward {
+    
+    struct StakingRewardConfig {
+        uint256 amount;
+        uint256 duration;
+    }
+
+    /* ---------- Views ---------- */
+    function stakingLockTime() external view returns (uint256);
+    function minApplicantStakingRatio() external view returns (uint256);
+
+    /* ---------- Functions ---------- */
+    function applyReward(address token, address account) external;
+
+}
+
+
+// File contracts/interfaces/ICeresStaking.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+interface ICeresStaking {
+
+    /* ---------- Views ---------- */
+    function token() external view returns (address);
+    function totalStaking() external view returns (uint256);
+    function stakingBalanceOf(address account) external view returns (uint256);
+    function totalShare() external view returns (uint256);
+    function shareUnusedRatio() external view returns (uint256);
+    function shareBalanceOf(address account) external view returns (uint256);
+    function accountStakingRatio(address account) external view returns (uint256);
+    function earned(address account) external view returns (uint256);
+    function rewardRate() external view returns (uint256);
+    function rewardsDuration() external view returns (uint256);
+    function periodFinish() external view returns (uint256);
+    function yieldAPR() external view returns (uint256);
+    function value() external view returns (uint256);
+
+    /* ---------- Functions ---------- */
+    function stake(uint256 amount) external;
+    function withdraw(uint256 shareAmount) external;
+    function withdrawAll() external;
+    function applyReward() external;
+    function notifyReward(uint256 amount, uint256 duration) external;
+    function approveBank(uint256 amount) external;
+    function claimReward() external;
+}
+
+
+// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/IERC20.sol)
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Interface of the ERC20 standard as defined in the EIP.
+ */
+interface IERC20 {
+    /**
+     * @dev Returns the amount of tokens in existence.
+     */
+    function totalSupply() external view returns (uint256);
+
+    /**
+     * @dev Returns the amount of tokens owned by `account`.
+     */
+    function balanceOf(address account) external view returns (uint256);
+
+    /**
+     * @dev Moves `amount` tokens from the caller's account to `to`.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transfer(address to, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Returns the remaining number of tokens that `spender` will be
+     * allowed to spend on behalf of `owner` through {transferFrom}. This is
+     * zero by default.
+     *
+     * This value changes when {approve} or {transferFrom} are called.
+     */
+    function allowance(address owner, address spender) external view returns (uint256);
+
+    /**
+     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * IMPORTANT: Beware that changing an allowance with this method brings the risk
+     * that someone may use both the old and the new allowance by unfortunate
+     * transaction ordering. One possible solution to mitigate this race
+     * condition is to first reduce the spender's allowance to 0 and set the
+     * desired value afterwards:
+     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+     *
+     * Emits an {Approval} event.
+     */
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Moves `amount` tokens from `from` to `to` using the
+     * allowance mechanism. `amount` is then deducted from the caller's
+     * allowance.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external returns (bool);
+
+    /**
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
+     *
+     * Note that `value` may be zero.
+     */
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    /**
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
+     */
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+
+
+// File @openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts v4.4.1 (token/ERC20/extensions/IERC20Metadata.sol)
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Interface for the optional metadata functions from the ERC20 standard.
+ *
+ * _Available since v4.1._
+ */
+interface IERC20Metadata is IERC20 {
+    /**
+     * @dev Returns the name of the token.
+     */
+    function name() external view returns (string memory);
+
+    /**
+     * @dev Returns the symbol of the token.
+     */
+    function symbol() external view returns (string memory);
+
+    /**
+     * @dev Returns the decimals places of the token.
+     */
+    function decimals() external view returns (uint8);
+}
+
+
+// File contracts/interfaces/ICeresCoin.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+interface ICeresCoin is IERC20Metadata {
+
+    /* ---------- Functions ---------- */
+    function mint(address to, uint256 amount) external;
+    function burn(address from, uint256 amount) external;
 }
 
 
@@ -1027,98 +1020,92 @@ pragma solidity ^0.8.4;
 
 
 
-
-
 contract CeresReward is CeresBaseUpgradeable, ICeresReward, UUPSUpgradeable {
 
-    function initialize(address _factory, address _crs, uint256 _bonus) public initializer {
-        CeresBaseUpgradeable.__CeresBase_init(_factory);
-        crs = IERC20(_crs);
-        applicantCRSBonus = _bonus;
-    }
-
     /* Parameters */
-    IERC20 public crs;
-    uint256 public rewardSent;
+    ICeresCoin public veCrs;
     uint256 public override stakingLockTime;
-    uint256 public override minStakingValue;
     uint256 public override minApplicantStakingRatio;
-    address[] public appliedStakings;
+    uint256 public minStakingValue;
+    uint256 public applicantBonusAmount;
+    
     mapping(address => StakingRewardConfig) public stakingRewardConfigs;
-    uint256 public applicantCRSBonus;
-
     mapping(address => address) public lastRewardApplicant;
     mapping(address => uint256) public lastAppliedTimestamp;
     mapping(address => uint256) public amountApplied;
 
     /* Events */
-    event RewardAdded(uint256 amount);
-    event RewardApplied(address indexed account, uint256 amount, uint256 bonus);
+    event RewardApplied(address indexed token, address indexed account, uint256 amount, uint256 bonus);
+
+    function initialize(address _factory, address _veCRS, uint256 _bonus, uint256 _stakingLockTime, uint256 _minStakingValue,
+        uint256 _minApplicantStakingRatio) public initializer {
+        CeresBaseUpgradeable.__CeresBase_init(_factory);
+        veCrs = ICeresCoin(_veCRS);
+        applicantBonusAmount = _bonus;
+        stakingLockTime = _stakingLockTime;
+        minStakingValue = _minStakingValue;
+        minApplicantStakingRatio = _minApplicantStakingRatio;
+    }
 
     /* Public Views */
-    function getAppliedStakings() external view override returns (address[] memory){
-        return appliedStakings;
-    }
-    function getAppliedStakingsLength() external view override returns (uint256){
-        return appliedStakings.length;
-    }
-    function getDefaultRewardDuration() public view returns (StakingRewardConfig memory) {
-        return stakingRewardConfigs[address(0)];
+    function getRewardConfig(address token) public view returns (StakingRewardConfig memory config) {
+        config = stakingRewardConfigs[token];
+        if (config.amount == 0)
+            config.amount = stakingRewardConfigs[address(0)].amount;
+        if (config.duration == 0)
+            config.duration = stakingRewardConfigs[address(0)].duration;
     }
 
     /* Internal */
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwnerOrGovernor {}
 
     /* Functions */
-    function applyReward(address account) external override onlyCeresStaking {
+    function applyReward(address token, address account) external override onlyCeresStaking {
+
+        require(factory.isStakingRewards(token), "CeresReward: Not staking rewards.");
         ICeresStaking staking = ICeresStaking(msg.sender);
-        require(factory.isStakingRewards(staking.token()), "CeresReward: This staking can not apply rewards now.");
         uint256 stakingValue = staking.value();
         require(stakingValue >= minStakingValue, "CeresReward: Staking value is not enough to apply reward!");
 
-        StakingRewardConfig memory _config = stakingRewardConfigs[msg.sender];
-        if (_config.amount == 0)
-            _config = getDefaultRewardDuration();
-
+        StakingRewardConfig memory _config = getRewardConfig(token);
         if (_config.amount > 0) {
-            uint256 transferCRSAmount = _config.amount;
-            /* v2_5 change transfer CRSBonus in Stakings,no change in here */
-            require(crs.balanceOf(address(this)) >= transferCRSAmount, "CeresReward: Balance is not enough for applying reward.");
-            crs.transfer(msg.sender, transferCRSAmount);
+            // reward to staking
+            veCrs.mint(msg.sender, _config.amount);
             staking.notifyReward(_config.amount, _config.duration);
+            // bonus to applicant
+            veCrs.mint(account, applicantBonusAmount);
 
-            // add applicant bonus staking
-            address stakingCRS = factory.getStaking(address(crs));
-            ICeresBank(factory.ceresBank()).mintBonusTo(stakingCRS, applicantCRSBonus);
-            IStakingReceiver(stakingCRS).notifyStaking(account, applicantCRSBonus);
-
-            // save applicant data
-            if (lastAppliedTimestamp[msg.sender] == 0)
-                appliedStakings.push(msg.sender);
-            lastAppliedTimestamp[msg.sender] = block.timestamp;
-            lastRewardApplicant[msg.sender] = account;
-            amountApplied[msg.sender] += _config.amount;
-            emit RewardApplied(account, _config.amount, applicantCRSBonus);
+            lastAppliedTimestamp[token] = block.timestamp;
+            lastRewardApplicant[token] = account;
+            amountApplied[token] += _config.amount;
+            emit RewardApplied(token, account, _config.amount, applicantBonusAmount);
         }
     }
+    
     /* Settings */
     function setStakingLockTime(uint256 _stakingLockTime) external onlyOwnerOrGovernor {
+        require(_stakingLockTime > 0 && _stakingLockTime < 90 days, "CeresReward: Invalid staking lock time!");
         stakingLockTime = _stakingLockTime;
     }
+
     function setMinStakingValue(uint256 _minStakingValue) external onlyOwnerOrGovernor {
         minStakingValue = _minStakingValue;
     }
+
     function setMinApplicantStakingRatio(uint256 _minApplicantStakingRatio) external onlyOwnerOrGovernor {
+        require(_minApplicantStakingRatio < 1e6, "CeresReward: Invalid staking ratio!");
         minApplicantStakingRatio = _minApplicantStakingRatio;
     }
-    function setStakingRewardConfig(address _staking, uint256 _amount, uint256 _duration) public onlyOwnerOrGovernor {
-        require(_amount > 0, "CeresReward: Reward amount must be bigger than zero!");
-        require(_duration > 0, "CeresReward: Reward duration must be bigger than zero!");
 
-        stakingRewardConfigs[_staking].amount = _amount;
-        stakingRewardConfigs[_staking].duration = _duration;
+    function setStakingRewardConfig(address _token, uint256 _amount, uint256 _duration) public onlyOwnerOrGovernor {
+        require(_amount > 1e18, "CeresReward: Invalid amount!");
+        require(_duration > 0 && _duration <= 365 days, "CeresReward: Invalid duration!");
+
+        stakingRewardConfigs[_token].amount = _amount;
+        stakingRewardConfigs[_token].duration = _duration;
     }
-    function setApplicantCRSBonus(uint256 _applicantCRSBonus) external onlyOwnerOrGovernor {
-        applicantCRSBonus = _applicantCRSBonus;
+
+    function setApplicantBonusAmount(uint256 _applicantBonusAmount) external onlyOwnerOrGovernor {
+        applicantBonusAmount = _applicantBonusAmount;
     }
 }

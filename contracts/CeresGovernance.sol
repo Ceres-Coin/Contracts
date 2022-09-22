@@ -1,5 +1,4 @@
-
-// Sources flattened with hardhat v2.7.0 https://hardhat.org
+// Sources flattened with hardhat v2.10.2 https://hardhat.org
 
 // File @openzeppelin/contracts/utils/Strings.sol@v4.5.0
 
@@ -3280,6 +3279,7 @@ interface ICeresStaking {
     function totalStaking() external view returns (uint256);
     function stakingBalanceOf(address account) external view returns (uint256);
     function totalShare() external view returns (uint256);
+    function shareUnusedRatio() external view returns (uint256);
     function shareBalanceOf(address account) external view returns (uint256);
     function accountStakingRatio(address account) external view returns (uint256);
     function earned(address account) external view returns (uint256);
@@ -3292,10 +3292,11 @@ interface ICeresStaking {
     /* ---------- Functions ---------- */
     function stake(uint256 amount) external;
     function withdraw(uint256 shareAmount) external;
-    function reinvestReward() external;
+    function withdrawAll() external;
     function applyReward() external;
     function notifyReward(uint256 amount, uint256 duration) external;
     function approveBank(uint256 amount) external;
+    function claimReward() external;
 }
 
 
@@ -3312,19 +3313,22 @@ pragma solidity ^0.8.4;
 
 contract CeresGovernance is Governor, GovernorSettings, GovernorCompatibilityBravo, GovernorVotes, GovernorVotesQuorumFraction, GovernorTimelockControl {
 
-    ICeresStaking public staking;
-    uint256 public minStakingRatioPropose;
     uint256[] public proposalIds;
+    mapping(uint256 => string) public descriptions;
 
-    constructor(IVotes _token, TimelockController _timelock, uint256 _minStakingRatioPropose)
-    Governor("MyGovernor")
-    GovernorSettings(10 /* 1 block */, 10 /* 1 minute */, 0)
-    GovernorVotes(_token)
-    GovernorVotesQuorumFraction(4)
-    GovernorTimelockControl(_timelock){
-        staking = ICeresStaking(address(_token));
-        minStakingRatioPropose = _minStakingRatioPropose;
+    struct ProposalPreview {
+        uint256 _proposalId;
+        string _description;
+        ProposalState _state;
     }
+
+    constructor(IVotes _token, TimelockController _timelock, uint256 _votingDelay, uint256 _votingPeriod, 
+        uint256 _proposalThreshold, uint256 _quorum)
+    Governor("CeresGovernor")
+    GovernorSettings(_votingDelay, _votingPeriod, _proposalThreshold)
+    GovernorVotes(_token)
+    GovernorVotesQuorumFraction(_quorum)
+    GovernorTimelockControl(_timelock){}
 
     /* Public Views */
     function votingDelay() public view override(IGovernor, GovernorSettings) returns (uint256){
@@ -3342,11 +3346,14 @@ contract CeresGovernance is Governor, GovernorSettings, GovernorCompatibilityBra
     function state(uint256 proposalId) public view override(Governor, IGovernor, GovernorTimelockControl) returns (ProposalState){
         return super.state(proposalId);
     }
+    function proposalsCount() public view returns (uint256){
+        return proposalIds.length;
+    }
     function propose(address[] memory targets, uint256[] memory values, bytes[] memory calldatas, string memory description)
         public override(Governor, GovernorCompatibilityBravo, IGovernor) returns (uint256){
-        require(staking.accountStakingRatio(msg.sender) >= minStakingRatioPropose, "CeresGovernance: Your staking ratio is not enough to propose!");
         uint256 proposalId = super.propose(targets, values, calldatas, description);
         proposalIds.push(proposalId);
+        descriptions[proposalId] = description;
         return proposalId;
     }
     function latestProposalId() public view returns (uint256){
@@ -3355,13 +3362,19 @@ contract CeresGovernance is Governor, GovernorSettings, GovernorCompatibilityBra
         else
             return proposalIds[proposalIds.length - 1];
     }
-    function latestNumProposalId(uint256 num) public view returns (uint256[] memory _proposalIds){
+    function latestProposals(uint256 num, uint256 skip) public view returns (ProposalPreview[] memory _proposals){
 
-        num = num > proposalIds.length ? proposalIds.length : num;
-        _proposalIds = new uint256[](num);
-        for (uint256 i = 0; i < num; i++)
-            _proposalIds[i] = proposalIds[proposalIds.length - 1 - i];
-        return _proposalIds;
+        uint256 _left = proposalIds.length - skip;
+        num = num > _left ? _left : num;
+        _proposals = new ProposalPreview[](num);
+        
+        for (uint256 i = 0; i < num; i++){
+            uint256 _proposalId = proposalIds[_left - 1 - i];
+            _proposals[i] = ProposalPreview(_proposalId, descriptions[_proposalId], state(_proposalId));
+        }
+    }
+    function previewById(uint256 _proposalId) public view returns (ProposalPreview memory _proposal){
+        _proposal = ProposalPreview(_proposalId, descriptions[_proposalId], state(_proposalId));
     }
     function proposalThreshold() public view override(Governor, GovernorSettings) returns (uint256){
         return super.proposalThreshold();

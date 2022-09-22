@@ -1,4 +1,4 @@
-// Sources flattened with hardhat v2.7.0 https://hardhat.org
+// Sources flattened with hardhat v2.10.2 https://hardhat.org
 
 // File @openzeppelin/contracts-upgradeable/interfaces/draft-IERC1822Upgradeable.sol@v4.5.0
 
@@ -924,34 +924,126 @@ library SafeERC20Upgradeable {
 }
 
 
+// File contracts/interfaces/ICeresFactory.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+interface ICeresFactory {
+    
+    struct TokenInfo {
+        address token;
+        address staking;
+        address priceFeed;
+        bool isChainlinkFeed;
+        bool isVolatile;
+        bool isStakingRewards;
+        bool isStakingMineable;
+    }
+
+    /* ---------- Views ---------- */
+    function ceresBank() external view returns (address);
+    function ceresReward() external view returns (address);
+    function ceresMiner() external view returns (address);
+    function ceresSwap() external view returns (address);
+    function getTokenInfo(address token) external returns(TokenInfo memory);
+    function getStaking(address token) external view returns (address);
+    function getPriceFeed(address token) external view returns (address);
+    function isStaking(address sender) external view returns (bool);
+    function tokens(uint256 index) external view returns (address);
+    function owner() external view returns (address);
+    function governorTimelock() external view returns (address);
+
+    function getTokens() external view returns (address[] memory);
+    function getTokensLength() external view returns (uint256);
+    function getTokenPrice(address token) external view returns(uint256);
+    function isChainlinkFeed(address token) external view returns (bool);
+    function isVolatile(address token) external view returns (bool);
+    function isStakingRewards(address staking) external view returns (bool);
+    function isStakingMineable(address staking) external view returns (bool);
+    function oraclePeriod() external view returns (uint256);
+    
+    /* ---------- Public Functions ---------- */
+    function updateOracles(address[] memory _tokens) external;
+    function updateOracle(address token) external;
+    function addStaking(address token, address staking, address oracle, bool _isStakingRewards, bool _isStakingMineable) external;
+    function removeStaking(address token, address staking) external;
+    /* ---------- RRA ---------- */
+    function createStaking(address token, address chainlinkFeed, address quoteToken) external returns (address staking);
+    function createOracle(address token, address quoteToken) external returns (address);
+}
+
+
+// File contracts/common/CeresBaseUpgradeable.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+
+contract CeresBaseUpgradeable is Initializable {
+
+    uint256 public constant CERES_PRECISION = 1e6;
+    uint256 public constant SHARE_PRECISION = 1e18;
+
+    ICeresFactory public factory;
+
+    modifier onlyCeresBank() {
+        require(msg.sender == factory.ceresBank(), "Only CeresBank!");
+        _;
+    }
+
+    modifier onlyCeresStaking() {
+        require(factory.isStaking(msg.sender) == true, "Only CeresStaking!");
+        _;
+    }
+
+    modifier onlyCeresMiner() {
+        require(msg.sender == factory.ceresMiner(), "Only CeresMiner!");
+        _;
+    }
+
+    modifier onlyOwnerOrGovernor() {
+        require(msg.sender == factory.owner() || msg.sender == factory.governorTimelock(),
+            "Only owner or governor timelock!");
+        _;
+    }
+
+    function __CeresBase_init(address _factory) internal onlyInitializing {
+        factory = ICeresFactory(_factory);
+    }
+}
+
+
 // File contracts/interfaces/ICeresBank.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 interface ICeresBank {
+
+    struct CollateralConfig {
+        uint256 collateralRatio;
+        uint256 volatileRatio;
+        uint256 minimumRatio;
+        uint256 ratioStep;
+    }
     
     struct MintResult {
         uint256 ascTotal;
         uint256 ascToGovernor;
         uint256 ascToCol;
         uint256 ascToCrs;
-        uint256 ascToVol;
         uint256 colAmount;
         uint256 crsAmount;
-        uint256 volAmount;
-        uint256 bonusAmount;
-        address vol;
     }
-
+    
     /* views */
-    function minMinerStakingRatio() external view returns(uint256);
+    function ascPriceAnchored() external view returns(bool);
+    function currentRedeemToken() external view returns(address);
 
     /* functions */
     function mint(address collateral, uint256 amount) external returns (MintResult memory result);
-    function redeem(uint256 ascAmount) external;
-    function claimColFromStaking(uint256 colValueD18, address token) external returns(uint256);
-    function mintBonusTo(address recipient, uint256 amount) external;
+    function redeem(address collateral, uint256 ascAmount) external;
     
 }
 
@@ -1097,6 +1189,7 @@ interface ICeresStaking {
     function totalStaking() external view returns (uint256);
     function stakingBalanceOf(address account) external view returns (uint256);
     function totalShare() external view returns (uint256);
+    function shareUnusedRatio() external view returns (uint256);
     function shareBalanceOf(address account) external view returns (uint256);
     function accountStakingRatio(address account) external view returns (uint256);
     function earned(address account) external view returns (uint256);
@@ -1109,10 +1202,11 @@ interface ICeresStaking {
     /* ---------- Functions ---------- */
     function stake(uint256 amount) external;
     function withdraw(uint256 shareAmount) external;
-    function reinvestReward() external;
+    function withdrawAll() external;
     function applyReward() external;
     function notifyReward(uint256 amount, uint256 duration) external;
     function approveBank(uint256 amount) external;
+    function claimReward() external;
 }
 
 
@@ -1123,28 +1217,12 @@ pragma solidity ^0.8.4;
 
 interface IRedeemReceiver {
     /* ---------- Views ---------- */
-    function redeemEarnedCrs(address account) external view returns (uint256);
+    function redeemEarnedVeCRS(address account) external view returns (uint256);
     function redeemEarnedColValue(address account) external view returns (uint256);
 
     /* ---------- Functions ---------- */
-    function notifyRedeem(uint256 ascAmount, uint256 crsAmount, uint256 colValue) external;
+    function notifyRedeem(uint256 ascAmount, uint256 veCrsAmount, uint256 colValue) external;
     
-}
-
-
-// File contracts/interfaces/ICeresVault.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
-interface ICeresVault {
-    /* ---------- Events ---------- */
-    event Claim(address indexed from, uint256 amount);
-    event Withdraw(address indexed from, uint256 amount);
-
-    /* ---------- Functions ---------- */
-    function withdraw(address token, uint256 amount) external;
-    function claimFromBank(address staking, address token, uint256 amount) external;
 }
 
 
@@ -1175,103 +1253,6 @@ library CeresLibrary {
 }
 
 
-// File contracts/interfaces/ICeresFactory.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
-interface ICeresFactory {
-    
-    struct TokenInfo {
-        address token;
-        address staking;
-        address priceFeed;
-        bool isChainlinkFeed;
-        bool isVolatile;
-        bool isStakingRewards;
-        bool isStakingMineable;
-    }
-
-    /* ---------- Views ---------- */
-    function ceresBank() external view returns (address);
-    function ceresReward() external view returns (address);
-    function ceresMiner() external view returns (address);
-    function getTokenInfo(address token) external returns(TokenInfo memory);
-    function getStaking(address token) external view returns (address);
-    function getPriceFeed(address token) external view returns (address);
-    function isStaking(address sender) external view returns (bool);
-    function tokens(uint256 index) external view returns (address);
-    function owner() external view returns (address);
-    function governorTimelock() external view returns (address);
-
-    function getTokens() external view returns (address[] memory);
-    function getTokensLength() external view returns (uint256);
-    function getTokenPrice(address token) external view returns(uint256);
-    function isChainlinkFeed(address token) external view returns (bool);
-    function isVolatile(address token) external view returns (bool);
-    function isStakingRewards(address staking) external view returns (bool);
-    function isStakingMineable(address staking) external view returns (bool);
-    function oraclePeriod() external view returns (uint256);
-    
-    /* ---------- Public Functions ---------- */
-    function updateOracles(address[] memory _tokens) external;
-    function updateOracle(address token) external;
-    function addStaking(address token, address staking, address oracle, bool _isStakingRewards, bool _isStakingMineable) external;
-    function removeStaking(address token, address staking) external;
-    /* ---------- Setting Functions ---------- */
-    function setCeresBank(address _ceresBank) external;
-    function setCeresReward(address _ceresReward) external;
-    function setCeresMiner(address _ceresMiner) external;
-    function setCeresCreator(address _ceresCreator) external;
-    function setStaking(address token, address staking) external;
-    function setIsStakingRewards(address token, bool _isStakingRewards) external;
-    function setIsStakingMineable(address token, bool _isStakingMineable) external;
-    /* ---------- RRA ---------- */
-    function createStaking(address token, address chainlinkFeed, address quoteToken) external returns (address staking);
-    function createOracle(address token, address quoteToken) external returns (address);
-}
-
-
-// File contracts/common/CeresBaseUpgradeable.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
-
-contract CeresBaseUpgradeable is Initializable {
-
-    uint256 public constant CERES_PRECISION = 1e6;
-    uint256 public constant SHARE_PRECISION = 1e18;
-
-    ICeresFactory public factory;
-
-    modifier onlyCeresBank() {
-        require(msg.sender == factory.ceresBank(), "Only CeresBank!");
-        _;
-    }
-
-    modifier onlyCeresStaking() {
-        require(factory.isStaking(msg.sender) == true, "Only CeresStaking!");
-        _;
-    }
-
-    modifier onlyCeresMiner() {
-        require(msg.sender == factory.ceresMiner(), "Only CeresMiner!");
-        _;
-    }
-
-    modifier onlyOwnerOrGovernor() {
-        require(msg.sender == factory.owner() || msg.sender == factory.governorTimelock(),
-            "Only owner or governor timelock!");
-        _;
-    }
-
-    function __CeresBase_init(address _factory) internal initializer {
-        factory = ICeresFactory(_factory);
-    }
-}
-
-
 // File contracts/CeresBank.sol
 
 // SPDX-License-Identifier: MIT
@@ -1285,44 +1266,32 @@ pragma solidity ^0.8.0;
 
 
 
-
-
 contract CeresBank is CeresBaseUpgradeable, ICeresBank, UUPSUpgradeable {
-
-    uint256 public collateralRatio;
-    uint256 public collateralMintPercentMin;
-    uint256 public collateralMintPercentMax;
-    uint256 public collateralRatioHardCap;
-    uint256 public governorPercent;
-    uint256 public burnCRSPercent;
-    uint256 public minerCRSBonus;
-    uint256 public minASCMineablePrice;
-    uint256 public maxASCRedeemablePrice;
-    uint256 public ratioStep;
-    address public vault;
-    uint256 public mintCooldown;
-    uint256 public lastVolIndex;
-    uint256 public override minMinerStakingRatio;
-    mapping(address => uint256) public nextMintTime;
 
     ICeresCoin public asc;
     ICeresCoin public crs;
+    uint256 public anchorPrice;
+    uint256 public minASCMineablePrice;
+    uint256 public maxASCRedeemablePrice;
+    uint256 public collateralMintPercentMin;
+    uint256 public collateralMintPercentMax;
+    uint256 public governorPercent;
+    address public vault;
+    address public override currentRedeemToken;
+    mapping(address => CollateralConfig) public configs;
+    ICeresCoin public veCrs;
 
-    function initialize(address _factory, address _asc, address _crs, uint256 _updateCoolDown, uint256 _bonus) public initializer {
+    function initialize(address _factory, address _asc, address _crs, address _vault) public initializer {
 
         CeresBaseUpgradeable.__CeresBase_init(_factory);
-        collateralRatio = 1e6;
-        collateralMintPercentMin = 10000;
-        collateralMintPercentMax = 200000;
-        collateralRatioHardCap = 960000;
-        governorPercent = 10000;
-        burnCRSPercent = 1000000;
-        minerCRSBonus = _bonus;
+        configs[address(0)] = CollateralConfig(1e6, 1e6, 0.5e6, 500);
+        anchorPrice = 1e6;
         minASCMineablePrice = 1.05e6;
         maxASCRedeemablePrice = 0.95e6;
-        ratioStep = 1500;
-        mintCooldown = _updateCoolDown;
-        
+        collateralMintPercentMin = 10000;
+        collateralMintPercentMax = 200000;
+        governorPercent = 10000;
+        vault = _vault;
         asc = ICeresCoin(_asc);
         crs = ICeresCoin(_crs);
     }
@@ -1336,14 +1305,31 @@ contract CeresBank is CeresBaseUpgradeable, ICeresBank, UUPSUpgradeable {
         return factory.getTokenPrice(address(asc)) <= maxASCRedeemablePrice;
     }
 
+    function ascPriceAnchored() external view override returns (bool){
+        return factory.getTokenPrice(address(asc)) >= anchorPrice;
+    }
+
+    function getCollateralConfig(address collateral) public view returns (CollateralConfig memory config){
+        CollateralConfig memory _default = configs[address(0)];
+        config = configs[collateral];
+        if (config.collateralRatio == 0)
+            config.collateralRatio = _default.collateralRatio;
+        if (config.volatileRatio == 0)
+            config.volatileRatio = _default.volatileRatio;
+        if (config.minimumRatio == 0)
+            config.minimumRatio = _default.minimumRatio;
+        if (config.ratioStep == 0)
+            config.ratioStep = _default.ratioStep;
+    }
+
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwnerOrGovernor {}
 
     /* ---------- Public Functions ----------*/
     function mint(address collateral, uint256 amount) external override onlyCeresMiner returns (MintResult memory result){
 
         require(factory.isStakingMineable(collateral), "CeresBank: This collateral is not available to mint in CeresBank!");
-        require(block.timestamp > nextMintTime[collateral], "CeresBank: Please wait for mint cooldown!");
         require(ascPriceMineable(), "CeresBank: ASC price now is not mineable!");
+        CollateralConfig memory config = getCollateralConfig(collateral);
 
         // determine the collateral mint amount
         address stakingCol = factory.getStaking(collateral);
@@ -1355,7 +1341,8 @@ contract CeresBank is CeresBaseUpgradeable, ICeresBank, UUPSUpgradeable {
         SafeERC20Upgradeable.safeTransferFrom(IERC20Upgradeable(collateral), stakingCol, vault, colAmount);
 
         // calc asc mint amount
-        result = _calcMintResult(collateral, colAmount);
+        bool isVol = factory.isVolatile(collateral);
+        result = _calcMintResult(collateral, colAmount, config.collateralRatio, config.volatileRatio, isVol);
 
         // burn from staking crs
         address stakingCRS = factory.getStaking(address(crs));
@@ -1364,83 +1351,41 @@ contract CeresBank is CeresBaseUpgradeable, ICeresBank, UUPSUpgradeable {
             crs.burn(stakingCRS, result.crsAmount);
         }
 
-        // transfer from staking vol
-        if (result.volAmount > 0) {
-            address stakingVol = factory.getStaking(result.vol);
-            ICeresStaking(stakingVol).approveBank(result.volAmount);
-            SafeERC20Upgradeable.safeTransferFrom(IERC20Upgradeable(result.vol), stakingVol, vault, result.volAmount);
-        }
-
         // mint asc
-        asc.mint(address(this), result.ascTotal);
-        asc.transfer(factory.governorTimelock(), result.ascToGovernor);
-        asc.transfer(factory.ceresMiner(), result.ascTotal - result.ascToGovernor);
+        asc.mint(factory.ceresMiner(), result.ascTotal);
 
-        // update cr and cooldown
-        collateralRatio = collateralRatio - ratioStep >= collateralRatioHardCap ? collateralRatio - ratioStep : collateralRatioHardCap;
-        nextMintTime[collateral] = block.timestamp + mintCooldown;
+        // update ratio 
+        if (isVol) {
+            uint256 _vr = config.volatileRatio - config.ratioStep;
+            configs[collateral].volatileRatio = _vr >= config.minimumRatio ? _vr : config.minimumRatio;
+        } else {
+            uint256 _cr = config.collateralRatio - config.ratioStep;
+            configs[collateral].collateralRatio = _cr >= config.minimumRatio ? _cr : config.minimumRatio;
+        }
     }
 
-    function _calcMintResult(address collateral, uint256 colAmount) internal returns (MintResult memory) {
+    function _calcMintResult(address collateral, uint256 colAmount, uint256 collateralRatio, uint256 volatileRatio, bool isVol) internal view returns (MintResult memory) {
 
         uint256 colPrice = factory.getTokenPrice(collateral);
         uint256 colValueD18 = CeresLibrary.toAmountD18(collateral, colAmount) * colPrice / CERES_PRECISION;
 
-        uint256 ascTotal = colValueD18 * CERES_PRECISION / collateralRatio;
+        uint256 ascTotal;
+        if (isVol) {
+            ascTotal = colValueD18 * CERES_PRECISION ** 3 / anchorPrice / collateralRatio / volatileRatio;
+            collateralRatio = volatileRatio;
+        } else {
+            ascTotal = colValueD18 * CERES_PRECISION ** 2 / anchorPrice / collateralRatio;
+        }
+
         uint256 ascToGovernor = ascTotal * governorPercent / CERES_PRECISION;
         uint256 ascToCol = (ascTotal - ascToGovernor) * collateralRatio / CERES_PRECISION;
+        uint256 ascToCrs = ascTotal - ascToGovernor - ascToCol;
 
-        uint256 left = ascTotal - ascToGovernor - ascToCol;
-        uint256 ascToCrs = left * burnCRSPercent / CERES_PRECISION;
-        uint256 ascToVol = left - ascToCrs;
-
-        address vol = _getNextVolIfQualified(ascTotal * (1e6 - collateralRatio) * (1e6 - burnCRSPercent) / 1e24);
-
-        uint256 crsAmount = 0;
-        uint256 volAmount = 0;
-        if (vol == address(0)) {
-            // vol staking is not qualified, burn crs percent rollback to 100%
-            ascToCrs += ascToVol;
-            crsAmount = ascTotal * (1e6 - collateralRatio) / factory.getTokenPrice(address(crs));
-        } else {
-            crsAmount = ascTotal * (1e6 - collateralRatio) * burnCRSPercent / factory.getTokenPrice(address(crs)) / CERES_PRECISION;
-            volAmount = CeresLibrary.toAmountActual(
-                vol, ascTotal * (1e6 - collateralRatio) * (1e6 - burnCRSPercent) / factory.getTokenPrice(vol) / CERES_PRECISION);
-        }
-
-        return MintResult(ascTotal, ascToGovernor, ascToCol, ascToCrs, ascToVol, colAmount, crsAmount, volAmount, minerCRSBonus, vol);
+        uint256 crsAmount = ascTotal * (1e6 - collateralRatio) * anchorPrice / factory.getTokenPrice(address(crs)) / CERES_PRECISION;
+        return MintResult(ascTotal, ascToGovernor, ascToCol, ascToCrs, colAmount, crsAmount);
     }
 
-    function _getNextVolIfQualified(uint256 requiredTvl) internal returns (address vol){
-
-        if (requiredTvl > 0) {
-            // polling next volatile token
-            uint256 end = factory.getTokensLength() - 1;
-            uint256 from = lastVolIndex + 1 > end ? 0 : lastVolIndex + 1;
-            for (uint256 i = from; i <= end; i++) {
-                address _token = factory.tokens(i);
-                if (factory.isVolatile(_token)) {
-                    vol = _token;
-                    lastVolIndex = i;
-                    break;
-                }
-                if (i == end) {
-                    i = 0;
-                    end = lastVolIndex;
-                }
-            }
-
-            if (vol != address(0)) {
-                factory.updateOracle(vol);
-                if (ICeresStaking(factory.getStaking(vol)).value() >= requiredTvl)
-                    return vol;
-                else
-                    return address(0);
-            }
-        }
-    }
-
-    function redeem(uint256 ascAmount) external override onlyOwnerOrGovernor {
+    function redeem(address collateral, uint256 ascAmount) external override onlyOwnerOrGovernor {
         require(ascAmount > 0, "CeresBank: Redeem amount can not be zero!");
 
         // update oracles
@@ -1454,91 +1399,100 @@ contract CeresBank is CeresBaseUpgradeable, ICeresBank, UUPSUpgradeable {
         address stakingASC = factory.getStaking(address(asc));
         asc.burn(stakingASC, ascAmount);
 
-        uint256 redeemColPercent = collateralRatio ** 2 / CERES_PRECISION;
-
-        // redeem col value in d18
+        // redeem collateral value in d18 with $1
+        CollateralConfig memory config = getCollateralConfig(collateral);
+        uint256 redeemColPercent = config.collateralRatio ** 2 / CERES_PRECISION;
         uint256 colValue = ascAmount * redeemColPercent / CERES_PRECISION;
 
-        // crs mint to staking asc
+        // redeem veCRS
         uint256 crsPrice = factory.getTokenPrice(address(crs));
-        uint256 crsAmount = ascAmount * (1e6 - redeemColPercent) / crsPrice;
-        crs.mint(stakingASC, crsAmount);
+        uint256 veCrsAmount = ascAmount * (1e6 - redeemColPercent) / crsPrice;
 
         // update cr
-        collateralRatio = collateralRatio + ratioStep <= 1e6 ? collateralRatio + ratioStep : 1e6;
+        uint256 _cr = config.collateralRatio + config.ratioStep;
+        configs[collateral].collateralRatio = _cr <= 1e6 ? _cr : 1e6;
 
         // notify redeem
-        IRedeemReceiver(stakingASC).notifyRedeem(ascAmount, crsAmount, colValue);
-    }
+        IRedeemReceiver(stakingASC).notifyRedeem(ascAmount, veCrsAmount, colValue);
 
-    /* ---------- Function: Claim ---------- */
-    function claimColFromStaking(uint256 colValueD18, address claimToken) external override onlyCeresStaking returns (uint256 tokenAmount) {
-        uint256 tokenPrice = factory.getTokenPrice(claimToken);
-        tokenAmount = CeresLibrary.toAmountActual(claimToken, colValueD18 * CERES_PRECISION / tokenPrice);
-        ICeresVault(vault).claimFromBank(msg.sender, claimToken, tokenAmount);
-    }
+        // mint veCRS
+        veCrs.mint(stakingASC, veCrsAmount);
+        uint256 _transferColAmount = CeresLibrary.toAmountActual(collateral, colValue);
+        require(_transferColAmount <= IERC20(collateral).balanceOf(address(this)), "CeresBank: This collateral balance is not enough!");
+        SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(collateral), stakingASC, _transferColAmount);
 
-    function mintBonusTo(address recipient, uint256 amount) external override {
-        require(msg.sender == factory.ceresMiner() || msg.sender == factory.ceresReward(), "CeresBank: Sender is not CeresMiner or CeresReward!");
-        crs.mint(recipient, amount);
     }
 
     /* ---------- Settings ---------- */
-    function setCollateralRatio(uint256 _collateralRatio) external onlyOwnerOrGovernor {
-        collateralRatio = _collateralRatio;
-    } 
-    
-    function setCollateralMintPercentMin(uint256 _collateralMintPercentMin) external onlyOwnerOrGovernor {
-        collateralMintPercentMin = _collateralMintPercentMin;
-    } 
-    
-    function setCollateralMintPercentMax(uint256 _collateralMintPercentMax) external onlyOwnerOrGovernor {
-        collateralMintPercentMax = _collateralMintPercentMax;
+    function setVeCRS(address _veCrs) external onlyOwnerOrGovernor {
+        veCrs = ICeresCoin(_veCrs);
     }
     
-    function setCollateralRatioHardCap(uint256 _collateralRatioHardCap) external onlyOwnerOrGovernor {
-        collateralRatioHardCap = _collateralRatioHardCap;
+    function setCollateralRatio(address _collateral, uint256 _collateralRatio) external onlyOwnerOrGovernor {
+        configs[_collateral].collateralRatio = _collateralRatio;
     }
 
-    function setGovernorPercent(uint256 _governorPercent) external onlyOwnerOrGovernor {
-        governorPercent = _governorPercent;
+    function setVolatileRatio(address _collateral, uint256 _volatileRatio) external onlyOwnerOrGovernor {
+        require(_volatileRatio <= 1e6, "CeresBank: Invalid volatile ratio!");
+        configs[_collateral].volatileRatio = _volatileRatio;
     }
 
-    function setBurnCRSPercent(uint256 _burnCRSPercent) external onlyOwnerOrGovernor {
-        require(_burnCRSPercent <= CERES_PRECISION, "CeresBank: Burn percent can not be bigger than 1e6");
-        burnCRSPercent = _burnCRSPercent;
+    function setMinimumRatio(address _collateral, uint256 _minimumRatio) external onlyOwnerOrGovernor {
+        require(_minimumRatio <= 1e6, "CeresBank: Invalid minimum ratio!");
+        configs[_collateral].minimumRatio = _minimumRatio;
     }
 
-    function setMinerCRSBonus(uint256 _minerCRSBonus) external onlyOwnerOrGovernor {
-        minerCRSBonus = _minerCRSBonus;
+    function setRatioStep(address _collateral, uint256 _ratioStep) external onlyOwnerOrGovernor {
+        require(_ratioStep < 1e6, "CeresBank: Invalid ratio step!");
+        configs[_collateral].ratioStep = _ratioStep;
+    }
+
+    function setAnchorPrice(uint256 _anchorPrice) external onlyOwnerOrGovernor {
+        require(_anchorPrice > 0, "CeresBank: Invalid anchor price!");
+        anchorPrice = _anchorPrice;
     }
 
     function setMinASCMineablePrice(uint256 _minASCMineablePrice) external onlyOwnerOrGovernor {
+        require(_minASCMineablePrice > 0, "CeresBank: Invalid mineable price!");
         minASCMineablePrice = _minASCMineablePrice;
     }
 
     function setMaxASCRedeemablePrice(uint256 _maxASCRedeemablePrice) external onlyOwnerOrGovernor {
+        require(_maxASCRedeemablePrice > 0, "CeresBank: Invalid redeemable price!");
         maxASCRedeemablePrice = _maxASCRedeemablePrice;
     }
 
-    function setRatioStep(uint256 _ratioStep) external onlyOwnerOrGovernor {
-        ratioStep = _ratioStep;
+    function setCollateralMintPercentMin(uint256 _collateralMintPercentMin) external onlyOwnerOrGovernor {
+        require(_collateralMintPercentMin > 0 && _collateralMintPercentMin <= 1e6, "CeresBank: Invalid percent!");
+        collateralMintPercentMin = _collateralMintPercentMin;
+    }
+
+    function setCollateralMintPercentMax(uint256 _collateralMintPercentMax) external onlyOwnerOrGovernor {
+        require(_collateralMintPercentMax > 0 && _collateralMintPercentMax <= 1e6, "CeresBank: Invalid percent!");
+        collateralMintPercentMax = _collateralMintPercentMax;
+    }
+
+    function setGovernorPercent(uint256 _governorPercent) external onlyOwnerOrGovernor {
+        require(_governorPercent >= 0 && _governorPercent < 1e6, "CeresBank: Invalid percent!");
+        governorPercent = _governorPercent;
     }
 
     function setVault(address _vault) external onlyOwnerOrGovernor {
         vault = _vault;
     }
 
-    function setMintCoolDown(uint256 _mintCoolDown) external onlyOwnerOrGovernor {
-        mintCooldown = _mintCoolDown;
-    }
-    
-    function setLastVolIndex(uint256 _lastVolIndex) external onlyOwnerOrGovernor {
-        lastVolIndex = _lastVolIndex;
+    function setCurrentRedeemToken(address _currentRedeemToken) external onlyOwnerOrGovernor {
+        currentRedeemToken = _currentRedeemToken;
     }
 
-    function setMinMinerStakingRatio(uint256 _minMinerStakingRatio) external onlyOwnerOrGovernor {
-        minMinerStakingRatio = _minMinerStakingRatio;
+    function withdraw(address to, address[] calldata tokens, uint256[] calldata amounts) external onlyOwnerOrGovernor {
+        require(tokens.length == amounts.length, "CeresVault: Invalid length!");
+
+        for (uint256 i = 0; i < tokens.length; i++) {
+            address _token = tokens[i];
+            uint256 _amount = amounts[i];
+            require(_amount <= IERC20(_token).balanceOf(address(this)), "CeresVault: Vault balance is not enough!");
+            IERC20(_token).transfer(to, _amount);
+        }
     }
-    
 }

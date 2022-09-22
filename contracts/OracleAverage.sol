@@ -1,4 +1,4 @@
-// Sources flattened with hardhat v2.7.0 https://hardhat.org
+// Sources flattened with hardhat v2.10.2 https://hardhat.org
 
 // File @chainlink/contracts/src/v0.8/interfaces/AggregatorInterface.sol@v0.3.1
 
@@ -623,6 +623,7 @@ interface ICeresFactory {
     function ceresBank() external view returns (address);
     function ceresReward() external view returns (address);
     function ceresMiner() external view returns (address);
+    function ceresSwap() external view returns (address);
     function getTokenInfo(address token) external returns(TokenInfo memory);
     function getStaking(address token) external view returns (address);
     function getPriceFeed(address token) external view returns (address);
@@ -645,14 +646,6 @@ interface ICeresFactory {
     function updateOracle(address token) external;
     function addStaking(address token, address staking, address oracle, bool _isStakingRewards, bool _isStakingMineable) external;
     function removeStaking(address token, address staking) external;
-    /* ---------- Setting Functions ---------- */
-    function setCeresBank(address _ceresBank) external;
-    function setCeresReward(address _ceresReward) external;
-    function setCeresMiner(address _ceresMiner) external;
-    function setCeresCreator(address _ceresCreator) external;
-    function setStaking(address token, address staking) external;
-    function setIsStakingRewards(address token, bool _isStakingRewards) external;
-    function setIsStakingMineable(address token, bool _isStakingMineable) external;
     /* ---------- RRA ---------- */
     function createStaking(address token, address chainlinkFeed, address quoteToken) external returns (address staking);
     function createOracle(address token, address quoteToken) external returns (address);
@@ -703,7 +696,7 @@ contract OracleAverage is IOracle, Initializable {
     FixedPoint.uq112x112 public price1Average;
     ICeresFactory public ceresFactory;
 
-    function initialize(address _swapFactory, address _token, address _quoteToken, address _ceresFactory) external initializer {
+    function initialize(address _swapFactory, address _token, address _quoteToken, address _ceresFactory) public initializer {
         address pairAddr = ISwapFactory(_swapFactory).getPair(_token, _quoteToken);
         require(pairAddr != address(0), 'No pair!');
 

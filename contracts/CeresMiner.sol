@@ -1,4 +1,4 @@
-// Sources flattened with hardhat v2.7.0 https://hardhat.org
+// Sources flattened with hardhat v2.10.2 https://hardhat.org
 
 // File @openzeppelin/contracts-upgradeable/interfaces/draft-IERC1822Upgradeable.sol@v4.5.0
 
@@ -823,34 +823,126 @@ interface IERC20 {
 }
 
 
+// File contracts/interfaces/ICeresFactory.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+interface ICeresFactory {
+    
+    struct TokenInfo {
+        address token;
+        address staking;
+        address priceFeed;
+        bool isChainlinkFeed;
+        bool isVolatile;
+        bool isStakingRewards;
+        bool isStakingMineable;
+    }
+
+    /* ---------- Views ---------- */
+    function ceresBank() external view returns (address);
+    function ceresReward() external view returns (address);
+    function ceresMiner() external view returns (address);
+    function ceresSwap() external view returns (address);
+    function getTokenInfo(address token) external returns(TokenInfo memory);
+    function getStaking(address token) external view returns (address);
+    function getPriceFeed(address token) external view returns (address);
+    function isStaking(address sender) external view returns (bool);
+    function tokens(uint256 index) external view returns (address);
+    function owner() external view returns (address);
+    function governorTimelock() external view returns (address);
+
+    function getTokens() external view returns (address[] memory);
+    function getTokensLength() external view returns (uint256);
+    function getTokenPrice(address token) external view returns(uint256);
+    function isChainlinkFeed(address token) external view returns (bool);
+    function isVolatile(address token) external view returns (bool);
+    function isStakingRewards(address staking) external view returns (bool);
+    function isStakingMineable(address staking) external view returns (bool);
+    function oraclePeriod() external view returns (uint256);
+    
+    /* ---------- Public Functions ---------- */
+    function updateOracles(address[] memory _tokens) external;
+    function updateOracle(address token) external;
+    function addStaking(address token, address staking, address oracle, bool _isStakingRewards, bool _isStakingMineable) external;
+    function removeStaking(address token, address staking) external;
+    /* ---------- RRA ---------- */
+    function createStaking(address token, address chainlinkFeed, address quoteToken) external returns (address staking);
+    function createOracle(address token, address quoteToken) external returns (address);
+}
+
+
+// File contracts/common/CeresBaseUpgradeable.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+
+contract CeresBaseUpgradeable is Initializable {
+
+    uint256 public constant CERES_PRECISION = 1e6;
+    uint256 public constant SHARE_PRECISION = 1e18;
+
+    ICeresFactory public factory;
+
+    modifier onlyCeresBank() {
+        require(msg.sender == factory.ceresBank(), "Only CeresBank!");
+        _;
+    }
+
+    modifier onlyCeresStaking() {
+        require(factory.isStaking(msg.sender) == true, "Only CeresStaking!");
+        _;
+    }
+
+    modifier onlyCeresMiner() {
+        require(msg.sender == factory.ceresMiner(), "Only CeresMiner!");
+        _;
+    }
+
+    modifier onlyOwnerOrGovernor() {
+        require(msg.sender == factory.owner() || msg.sender == factory.governorTimelock(),
+            "Only owner or governor timelock!");
+        _;
+    }
+
+    function __CeresBase_init(address _factory) internal onlyInitializing {
+        factory = ICeresFactory(_factory);
+    }
+}
+
+
 // File contracts/interfaces/ICeresBank.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 interface ICeresBank {
+
+    struct CollateralConfig {
+        uint256 collateralRatio;
+        uint256 volatileRatio;
+        uint256 minimumRatio;
+        uint256 ratioStep;
+    }
     
     struct MintResult {
         uint256 ascTotal;
         uint256 ascToGovernor;
         uint256 ascToCol;
         uint256 ascToCrs;
-        uint256 ascToVol;
         uint256 colAmount;
         uint256 crsAmount;
-        uint256 volAmount;
-        uint256 bonusAmount;
-        address vol;
     }
-
+    
     /* views */
-    function minMinerStakingRatio() external view returns(uint256);
+    function ascPriceAnchored() external view returns(bool);
+    function currentRedeemToken() external view returns(address);
 
     /* functions */
     function mint(address collateral, uint256 amount) external returns (MintResult memory result);
-    function redeem(uint256 ascAmount) external;
-    function claimColFromStaking(uint256 colValueD18, address token) external returns(uint256);
-    function mintBonusTo(address recipient, uint256 amount) external;
+    function redeem(address collateral, uint256 ascAmount) external;
     
 }
 
@@ -861,8 +953,38 @@ interface ICeresBank {
 pragma solidity ^0.8.4;
 
 interface ICeresMiner {
+    
+    struct MintInfo {
+        address lastMiner;
+        uint256 lastMintedTimestamp;
+        uint256 lastMintAmount;
+        uint256 nextMintTimestamp;
+    }
 
     function mint(address token, address account) external;
+    function minMinerStakingRatio() external view returns(uint256);
+
+}
+
+
+// File contracts/interfaces/ICeresReward.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+interface ICeresReward {
+    
+    struct StakingRewardConfig {
+        uint256 amount;
+        uint256 duration;
+    }
+
+    /* ---------- Views ---------- */
+    function stakingLockTime() external view returns (uint256);
+    function minApplicantStakingRatio() external view returns (uint256);
+
+    /* ---------- Functions ---------- */
+    function applyReward(address token, address account) external;
 
 }
 
@@ -879,17 +1001,6 @@ interface IMintReceiver {
     /* ---------- Functions ---------- */
     function notifyMint(uint256 amountAsc, uint256 amountUsed) external;
     function reinvestMint() external;
-}
-
-
-// File contracts/interfaces/IStakingReceiver.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
-interface IStakingReceiver {
-    /* ---------- Notifies ---------- */
-    function notifyStaking(address account, uint256 amount) external;
 }
 
 
@@ -936,103 +1047,6 @@ interface ICeresCoin is IERC20Metadata {
 }
 
 
-// File contracts/interfaces/ICeresFactory.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
-interface ICeresFactory {
-    
-    struct TokenInfo {
-        address token;
-        address staking;
-        address priceFeed;
-        bool isChainlinkFeed;
-        bool isVolatile;
-        bool isStakingRewards;
-        bool isStakingMineable;
-    }
-
-    /* ---------- Views ---------- */
-    function ceresBank() external view returns (address);
-    function ceresReward() external view returns (address);
-    function ceresMiner() external view returns (address);
-    function getTokenInfo(address token) external returns(TokenInfo memory);
-    function getStaking(address token) external view returns (address);
-    function getPriceFeed(address token) external view returns (address);
-    function isStaking(address sender) external view returns (bool);
-    function tokens(uint256 index) external view returns (address);
-    function owner() external view returns (address);
-    function governorTimelock() external view returns (address);
-
-    function getTokens() external view returns (address[] memory);
-    function getTokensLength() external view returns (uint256);
-    function getTokenPrice(address token) external view returns(uint256);
-    function isChainlinkFeed(address token) external view returns (bool);
-    function isVolatile(address token) external view returns (bool);
-    function isStakingRewards(address staking) external view returns (bool);
-    function isStakingMineable(address staking) external view returns (bool);
-    function oraclePeriod() external view returns (uint256);
-    
-    /* ---------- Public Functions ---------- */
-    function updateOracles(address[] memory _tokens) external;
-    function updateOracle(address token) external;
-    function addStaking(address token, address staking, address oracle, bool _isStakingRewards, bool _isStakingMineable) external;
-    function removeStaking(address token, address staking) external;
-    /* ---------- Setting Functions ---------- */
-    function setCeresBank(address _ceresBank) external;
-    function setCeresReward(address _ceresReward) external;
-    function setCeresMiner(address _ceresMiner) external;
-    function setCeresCreator(address _ceresCreator) external;
-    function setStaking(address token, address staking) external;
-    function setIsStakingRewards(address token, bool _isStakingRewards) external;
-    function setIsStakingMineable(address token, bool _isStakingMineable) external;
-    /* ---------- RRA ---------- */
-    function createStaking(address token, address chainlinkFeed, address quoteToken) external returns (address staking);
-    function createOracle(address token, address quoteToken) external returns (address);
-}
-
-
-// File contracts/common/CeresBaseUpgradeable.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
-
-contract CeresBaseUpgradeable is Initializable {
-
-    uint256 public constant CERES_PRECISION = 1e6;
-    uint256 public constant SHARE_PRECISION = 1e18;
-
-    ICeresFactory public factory;
-
-    modifier onlyCeresBank() {
-        require(msg.sender == factory.ceresBank(), "Only CeresBank!");
-        _;
-    }
-
-    modifier onlyCeresStaking() {
-        require(factory.isStaking(msg.sender) == true, "Only CeresStaking!");
-        _;
-    }
-
-    modifier onlyCeresMiner() {
-        require(msg.sender == factory.ceresMiner(), "Only CeresMiner!");
-        _;
-    }
-
-    modifier onlyOwnerOrGovernor() {
-        require(msg.sender == factory.owner() || msg.sender == factory.governorTimelock(),
-            "Only owner or governor timelock!");
-        _;
-    }
-
-    function __CeresBase_init(address _factory) internal initializer {
-        factory = ICeresFactory(_factory);
-    }
-}
-
-
 // File contracts/CeresMiner.sol
 
 // SPDX-License-Identifier: MIT
@@ -1049,61 +1063,71 @@ contract CeresMiner is CeresBaseUpgradeable, ICeresMiner, UUPSUpgradeable {
 
     ICeresCoin public asc;
     ICeresCoin public crs;
-    address public miner;
+    ICeresCoin public veCrs;
+    address public keeper;
+    uint256 public mintCooldown;
+    uint256 public minerBonusAmount;
+    uint256 public override minMinerStakingRatio;
+    mapping(address => MintInfo) public mintInfos;
 
-    mapping(address => address) public lastMiner;
-    mapping(address => uint256) public lastMintedTimestamp;
-
-    function initialize(address _asc, address _crs, address _factory) public initializer {
+    function initialize(address _asc, address _crs, address _veCrs, address _factory, uint256 _mintCooldown,
+        uint256 _minerBonusAmount, uint256 _minMinerStakingRatio) public initializer {
         CeresBaseUpgradeable.__CeresBase_init(_factory);
         asc = ICeresCoin(_asc);
         crs = ICeresCoin(_crs);
+        veCrs = ICeresCoin(_veCrs);
+        mintCooldown = _mintCooldown;
+        minerBonusAmount = _minerBonusAmount;
+        minMinerStakingRatio = _minMinerStakingRatio;
     }
 
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwnerOrGovernor {}
-    
+
     function mint(address token, address account) external override onlyCeresStaking {
         _mint(token, account, 0);
     }
-    
+
     function mint(address token, address account, uint256 amount) external {
-        require(msg.sender == miner, "CeresMiner: Only Miner!");
+        require(msg.sender == keeper, "CeresMiner: Only Miner!");
         _mint(token, account, amount);
     }
 
     function _mint(address token, address account, uint256 amount) internal {
+        require(block.timestamp > mintInfos[token].nextMintTimestamp, "CeresBank: Please wait for mint cooldown!");
 
         updateOracles(token);
 
+        // mint from bank
         ICeresBank.MintResult memory result = ICeresBank(factory.ceresBank()).mint(token, amount);
-
         address stakingCOL = factory.getStaking(token);
         address stakingCRS = factory.getStaking(address(crs));
 
-        // transfer asc and notify receivers
+        // transfer to governor
+        if (result.ascToGovernor > 0)
+            asc.transfer(factory.governorTimelock(), result.ascToGovernor);
+
+        // transfer to col and notify
         if (result.ascToCol > 0) {
             asc.transfer(stakingCOL, result.ascToCol);
             IMintReceiver(stakingCOL).notifyMint(result.ascToCol, result.colAmount);
         }
 
+        // transfer to crs and notify
         if (result.crsAmount > 0) {
             asc.transfer(stakingCRS, result.ascToCrs);
             IMintReceiver(stakingCRS).notifyMint(result.ascToCrs, result.crsAmount);
         }
 
-        if (result.volAmount > 0) {
-            address stakingVol = factory.getStaking(result.vol);
-            asc.transfer(stakingVol, result.ascToVol);
-            IMintReceiver(stakingVol).notifyMint(result.ascToVol, result.volAmount);
-        }
+        // bonus to miner
+        if (minerBonusAmount > 0)
+            veCrs.mint(account, minerBonusAmount);
 
-        if (result.bonusAmount > 0) {
-            ICeresBank(factory.ceresBank()).mintBonusTo(stakingCRS, result.bonusAmount);
-            IStakingReceiver(stakingCRS).notifyStaking(account, result.bonusAmount);
-        }
-
-        lastMiner[stakingCOL] = account;
-        lastMintedTimestamp[stakingCOL] = block.timestamp;
+        // update miner infos
+        mintInfos[token].lastMiner = account;
+        mintInfos[token].lastMintedTimestamp = block.timestamp;
+        mintInfos[token].lastMintAmount = result.ascToCol;
+        mintInfos[token].nextMintTimestamp = block.timestamp + mintCooldown;
+        mintInfos[address(crs)].lastMintAmount = result.ascToCrs;
     }
 
     // update assets oracle
@@ -1115,7 +1139,21 @@ contract CeresMiner is CeresBaseUpgradeable, ICeresMiner, UUPSUpgradeable {
         factory.updateOracles(_tokens);
     }
 
-    function setMiner(address _miner) external onlyOwnerOrGovernor {
-        miner = _miner;
+    function setKeeper(address _keeper) external onlyOwnerOrGovernor {
+        keeper = _keeper;
+    }
+
+    function setMintCoolDown(uint256 _mintCoolDown) external onlyOwnerOrGovernor {
+        require(_mintCoolDown > 0 && _mintCoolDown < 90 days, "CeresBank: Invalid cool down!");
+        mintCooldown = _mintCoolDown;
+    }
+
+    function setMinerBonusAmount(uint256 _minerBonusAmount) external onlyOwnerOrGovernor {
+        minerBonusAmount = _minerBonusAmount;
+    }
+    
+    function setMinMinerStakingRatio(uint256 _minMinerStakingRatio) external onlyOwnerOrGovernor {
+        require(_minMinerStakingRatio < 1e6, "CeresBank: Invalid staking ratio");
+        minMinerStakingRatio = _minMinerStakingRatio;
     }
 }

@@ -1,4 +1,4 @@
-// Sources flattened with hardhat v2.7.0 https://hardhat.org
+// Sources flattened with hardhat v2.10.2 https://hardhat.org
 
 // File @openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol@v4.5.0
 
@@ -1013,6 +1013,7 @@ interface ICeresFactory {
     function ceresBank() external view returns (address);
     function ceresReward() external view returns (address);
     function ceresMiner() external view returns (address);
+    function ceresSwap() external view returns (address);
     function getTokenInfo(address token) external returns(TokenInfo memory);
     function getStaking(address token) external view returns (address);
     function getPriceFeed(address token) external view returns (address);
@@ -1035,29 +1036,30 @@ interface ICeresFactory {
     function updateOracle(address token) external;
     function addStaking(address token, address staking, address oracle, bool _isStakingRewards, bool _isStakingMineable) external;
     function removeStaking(address token, address staking) external;
-    /* ---------- Setting Functions ---------- */
-    function setCeresBank(address _ceresBank) external;
-    function setCeresReward(address _ceresReward) external;
-    function setCeresMiner(address _ceresMiner) external;
-    function setCeresCreator(address _ceresCreator) external;
-    function setStaking(address token, address staking) external;
-    function setIsStakingRewards(address token, bool _isStakingRewards) external;
-    function setIsStakingMineable(address token, bool _isStakingMineable) external;
     /* ---------- RRA ---------- */
     function createStaking(address token, address chainlinkFeed, address quoteToken) external returns (address staking);
     function createOracle(address token, address quoteToken) external returns (address);
 }
 
 
-// File contracts/interfaces/ICeresCreator.sol
+// File contracts/interfaces/IStakingCreator.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-interface ICeresCreator {
+interface IStakingCreator {
     
-    /* ---------- Functions ---------- */
     function createStaking(address token) external returns (address);
+}
+
+
+// File contracts/interfaces/IOracleCreator.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+interface IOracleCreator {
+    
     function createOracle(address token, address quoteToken) external returns (address);
 }
 
@@ -1090,16 +1092,19 @@ pragma solidity ^0.8.4;
 
 
 
+
 contract CeresFactory is OwnableUpgradeable, UUPSUpgradeable, ICeresFactory {
     
     address public override ceresBank;
     address public override ceresReward;
     address public override ceresMiner;
+    address public override ceresSwap;
     address[] public override tokens;
     mapping(address => TokenInfo) public tokenInfo;
     mapping(address => bool) public override isStaking;
     address public override governorTimelock;
-    ICeresCreator public ceresCreator;
+    IStakingCreator public stakingCreator;
+    IOracleCreator public oracleCreator;
     uint256 public override oraclePeriod;
 
     modifier tokenAdded(address token) {
@@ -1111,9 +1116,8 @@ contract CeresFactory is OwnableUpgradeable, UUPSUpgradeable, ICeresFactory {
         _;
     }
 
-    function initialize(address _creator) public initializer {
+    function initialize() public initializer {
         OwnableUpgradeable.__Ownable_init();
-        ceresCreator = ICeresCreator(_creator);
         oraclePeriod = 5 seconds; // FIXME k: testnet value
     }
 
@@ -1159,6 +1163,7 @@ contract CeresFactory is OwnableUpgradeable, UUPSUpgradeable, ICeresFactory {
 
     /* internal views */
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwnerOrGovernor {}
+    
     function owner() public view override(ICeresFactory, OwnableUpgradeable) returns (address) {
         return OwnableUpgradeable.owner();
     }
@@ -1167,7 +1172,7 @@ contract CeresFactory is OwnableUpgradeable, UUPSUpgradeable, ICeresFactory {
     function createStaking(address token, address chainlinkFeed, address quoteToken) external override returns (address staking){
         require(tokenInfo[token].token == address(0), "CeresFactory: Staking already created!");
 
-        staking = ceresCreator.createStaking(token);
+        staking = stakingCreator.createStaking(token);
         tokenInfo[token].token = token;
         tokenInfo[token].staking = staking;
 
@@ -1187,7 +1192,7 @@ contract CeresFactory is OwnableUpgradeable, UUPSUpgradeable, ICeresFactory {
         require(tokenInfo[quoteToken].priceFeed != address(0), "CeresCreator: QuoteToken has no price feed!");
         require(tokenInfo[quoteToken].isChainlinkFeed, "CeresCreator: QuoteToken should be chainlink feed!");
 
-        oracle = ceresCreator.createOracle(token, quoteToken);
+        oracle = oracleCreator.createOracle(token, quoteToken);
         tokenInfo[token].priceFeed = oracle;
     }
 
@@ -1225,19 +1230,25 @@ contract CeresFactory is OwnableUpgradeable, UUPSUpgradeable, ICeresFactory {
     }
 
     /* Settings */
-    function setCeresBank(address _ceresBank) external override onlyOwnerOrGovernor {
+    function setCeresBank(address _ceresBank) external onlyOwnerOrGovernor {
         ceresBank = _ceresBank;
     }
-    function setCeresCreator(address _ceresCreator) external override onlyOwnerOrGovernor {
-        ceresCreator = ICeresCreator(_ceresCreator);
+    function setStakingCreator(address _stakingCreator) external onlyOwnerOrGovernor {
+        stakingCreator = IStakingCreator(_stakingCreator);
     }
-    function setCeresReward(address _ceresReward) external override onlyOwnerOrGovernor {
+    function setOracleCreator(address _oracleCreator) external onlyOwnerOrGovernor {
+        oracleCreator = IOracleCreator(_oracleCreator);
+    }
+    function setCeresReward(address _ceresReward) external onlyOwnerOrGovernor {
         ceresReward = _ceresReward;
     }
-    function setCeresMiner(address _ceresMiner) external override onlyOwnerOrGovernor {
+    function setCeresMiner(address _ceresMiner) external onlyOwnerOrGovernor {
         ceresMiner = _ceresMiner;
     }
-    function setStaking(address _token, address _staking) external override onlyOwnerOrGovernor tokenAdded(_token) {
+    function setCeresSwap(address _ceresSwap) external onlyOwnerOrGovernor{
+        ceresSwap = _ceresSwap;
+    }
+    function setStaking(address _token, address _staking) external onlyOwnerOrGovernor tokenAdded(_token) {
         isStaking[tokenInfo[_token].staking] = false;
         isStaking[_staking] = true;
         tokenInfo[_token].staking = _staking;
@@ -1250,16 +1261,16 @@ contract CeresFactory is OwnableUpgradeable, UUPSUpgradeable, ICeresFactory {
         require(tokenInfo[_quoteToken].priceFeed != address(0), "CeresCreator: QuoteToken has no price feed!");
         require(tokenInfo[_quoteToken].isChainlinkFeed, "CeresCreator: QuoteToken should be chainlink feed!");
 
-        tokenInfo[_token].priceFeed = ceresCreator.createOracle(_token, _quoteToken);
+        tokenInfo[_token].priceFeed = oracleCreator.createOracle(_token, _quoteToken);
         tokenInfo[_token].isChainlinkFeed = false;
     }
     function setIsVolatile(address _token, bool _isVolatile) external onlyOwnerOrGovernor {
         tokenInfo[_token].isVolatile = _isVolatile;
     }
-    function setIsStakingRewards(address _token, bool _isStakingRewards) external override onlyOwnerOrGovernor tokenAdded(_token) {
+    function setIsStakingRewards(address _token, bool _isStakingRewards) external onlyOwnerOrGovernor tokenAdded(_token) {
         tokenInfo[_token].isStakingRewards = _isStakingRewards;
     }
-    function setIsStakingMineable(address _token, bool _isStakingMineable) external override onlyOwnerOrGovernor tokenAdded(_token) {
+    function setIsStakingMineable(address _token, bool _isStakingMineable) external onlyOwnerOrGovernor tokenAdded(_token) {
         tokenInfo[_token].isStakingMineable = _isStakingMineable;
     }
     function setGovernorTimelock(address _governorTimelock) external onlyOwnerOrGovernor {

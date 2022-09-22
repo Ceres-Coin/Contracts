@@ -1,4 +1,4 @@
-// Sources flattened with hardhat v2.7.0 https://hardhat.org
+// Sources flattened with hardhat v2.10.2 https://hardhat.org
 
 // File @openzeppelin/contracts/access/IAccessControl.sol@v4.5.0
 

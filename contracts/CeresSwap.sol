@@ -86,6 +86,49 @@ interface IERC20 {
 }
 
 
+// File @openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol@v4.5.0
+
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts v4.4.1 (token/ERC20/extensions/IERC20Metadata.sol)
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Interface for the optional metadata functions from the ERC20 standard.
+ *
+ * _Available since v4.1._
+ */
+interface IERC20Metadata is IERC20 {
+    /**
+     * @dev Returns the name of the token.
+     */
+    function name() external view returns (string memory);
+
+    /**
+     * @dev Returns the symbol of the token.
+     */
+    function symbol() external view returns (string memory);
+
+    /**
+     * @dev Returns the decimals places of the token.
+     */
+    function decimals() external view returns (uint8);
+}
+
+
+// File contracts/interfaces/ICeresCoin.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+interface ICeresCoin is IERC20Metadata {
+
+    /* ---------- Functions ---------- */
+    function mint(address to, uint256 amount) external;
+    function burn(address from, uint256 amount) external;
+}
+
+
 // File contracts/interfaces/ICeresFactory.sol
 
 // SPDX-License-Identifier: MIT
@@ -136,34 +179,91 @@ interface ICeresFactory {
 }
 
 
-// File contracts/CeresVault.sol
+// File contracts/interfaces/ICeresBank.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+interface ICeresBank {
+
+    struct CollateralConfig {
+        uint256 collateralRatio;
+        uint256 volatileRatio;
+        uint256 minimumRatio;
+        uint256 ratioStep;
+    }
+    
+    struct MintResult {
+        uint256 ascTotal;
+        uint256 ascToGovernor;
+        uint256 ascToCol;
+        uint256 ascToCrs;
+        uint256 colAmount;
+        uint256 crsAmount;
+    }
+    
+    /* views */
+    function ascPriceAnchored() external view returns(bool);
+    function currentRedeemToken() external view returns(address);
+
+    /* functions */
+    function mint(address collateral, uint256 amount) external returns (MintResult memory result);
+    function redeem(address collateral, uint256 ascAmount) external;
+    
+}
+
+
+// File contracts/CeresSwap.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 
-contract CeresVault {
 
-    ICeresFactory public ceresFactory;
+contract CeresSwap {
 
-    modifier onlyOwner() {
-        require(msg.sender == ceresFactory.owner(), "Only owner!");
+    ICeresCoin public crs;
+    ICeresCoin public veCrs;
+    ICeresFactory public factory;
+    uint256 public swapRate;
+
+    event Swapped(address indexed account, uint256 amountIn, uint256 amountOut);
+
+    modifier onlyOwnerOrGovernor() {
+        require(msg.sender == factory.owner() || msg.sender == factory.governorTimelock(),
+            "Only owner or governor timelock!");
         _;
     }
 
-    constructor (address _ceresFactory) {
-        ceresFactory = ICeresFactory(_ceresFactory);
+    constructor(address _crs, address _veCrs, address _ceresFactory) {
+        crs = ICeresCoin(_crs);
+        veCrs = ICeresCoin(_veCrs);
+        factory = ICeresFactory(_ceresFactory);
+        swapRate = 1e18;
     }
 
-    function withdraw(address to, address[] calldata tokens, uint256[] calldata amounts) external onlyOwner {
-        require(tokens.length == amounts.length, "CeresVault: Invalid length!");
+    function swap(address to, uint256 amountIn) external {
+        require(veCrs.balanceOf(msg.sender) >= amountIn, "CeresSwap: Your veCRS balance is not enough!");
+        require(ICeresBank(factory.ceresBank()).ascPriceAnchored(), "CeresSwap: Can not swap under anchor price!");
+        uint256 amountOut = amountIn * swapRate / 1e18;
+        require(crs.balanceOf(address(this)) >= amountOut, "CeresSwap: Swap pool CRS balance is not enough!");
 
-        for (uint256 i = 0; i < tokens.length; i++) {
-            address _token = tokens[i];
-            uint256 _amount = amounts[i];
-            require(_amount <= IERC20(_token).balanceOf(address(this)), "CeresVault: Vault balance is not enough!");
-            IERC20(_token).transfer(to, _amount);
-        }
+        // swap
+        ICeresCoin(veCrs).burn(msg.sender, amountIn);
+        crs.transfer(to, amountOut);
+        emit Swapped(to, amountIn, amountOut);
     }
 
+    function setCeresFactory(address _ceresFactory) external onlyOwnerOrGovernor {
+        factory = ICeresFactory(_ceresFactory);
+    }
+
+    function setSwapRate(uint256 _swapRate) external onlyOwnerOrGovernor {
+        swapRate = _swapRate;
+    }
+    
+    function withdraw(address to, uint256 amount) external onlyOwnerOrGovernor {
+        require(crs.balanceOf(address(this)) >= amount, "CeresSwap: balance is not enough!");
+        crs.transfer(to, amount);
+    }
 }
